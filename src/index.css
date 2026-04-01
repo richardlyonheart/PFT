@@ -1,0 +1,36 @@
+:root {
+  --bg: #f3efe5;
+  --panel: #fffdf8;
+  --text: #1f2c2e;
+  --muted: #5f6660;
+  --line: #ddd2bf;
+  --accent: #d26129;
+  --heading-font: Rockwell, Georgia, serif;
+  --body-font: Bahnschrift, 'Trebuchet MS', 'Segoe UI', sans-serif;
+  font-family: var(--body-font);
+  line-height: 1.45;
+  color: var(--text);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(210, 97, 41, 0.2), transparent 40%),
+    radial-gradient(circle at 85% 20%, rgba(37, 110, 97, 0.24), transparent 35%),
+    var(--bg);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--heading-font);
+  letter-spacing: 0.01em;
+}
