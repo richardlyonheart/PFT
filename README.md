@@ -71,10 +71,10 @@ npm run preview:phone
 
 ## Firebase Backend (Cloud Sync)
 
-This project supports Firebase Anonymous Auth + Firestore sync.
+This project supports Firebase Google Sign-In + Firestore sync.
 
 1. Create a Firebase project in the Firebase console.
-2. Enable Authentication -> Sign-in method -> Anonymous.
+2. Enable Authentication -> Sign-in method -> Google.
 3. Create a Firestore database.
 4. Copy `.env.example` to `.env` and fill in your Firebase values:
 

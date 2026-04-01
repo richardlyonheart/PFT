@@ -566,6 +566,8 @@ function App() {
   const [firebaseApi, setFirebaseApi] = useState(null)
   const [cloudStatus, setCloudStatus] = useState('Checking cloud config...')
   const [cloudUid, setCloudUid] = useState('')
+  const [cloudUserLabel, setCloudUserLabel] = useState('')
+  const [guestMode, setGuestMode] = useState(false)
   const applyingRemoteRef = useRef(false)
   const lastCloudPayloadRef = useRef('')
 
@@ -610,22 +612,68 @@ function App() {
       return undefined
     }
 
-    const unsubscribe = firebaseApi.onAuthStateChanged(firebaseApi.auth, async (user) => {
+    const unsubscribe = firebaseApi.onAuthStateChanged(firebaseApi.auth, (user) => {
       if (user) {
+        setGuestMode(false)
         setCloudUid(user.uid)
+        const label = user.displayName || user.email || user.uid.slice(0, 8)
+        setCloudUserLabel(label)
         setCloudStatus('Cloud sync active')
         return
       }
 
-      try {
-        await firebaseApi.signInAnonymously(firebaseApi.auth)
-      } catch {
-        setCloudStatus('Firebase auth failed, using local mode')
-      }
+      setCloudUid('')
+      setCloudUserLabel('')
+      setCloudStatus(guestMode ? 'Guest mode (local only)' : 'Sign in with Google for cloud sync')
     })
 
     return unsubscribe
-  }, [firebaseApi])
+  }, [firebaseApi, guestMode])
+
+  const signInWithGoogle = async () => {
+    if (!firebaseApi?.auth) {
+      return
+    }
+
+    setGuestMode(false)
+    setCloudStatus('Signing in with Google...')
+
+    try {
+      await firebaseApi.signInWithPopup(firebaseApi.auth, firebaseApi.googleProvider)
+    } catch (error) {
+      if (error?.code === 'auth/popup-blocked' || error?.code === 'auth/cancelled-popup-request') {
+        try {
+          await firebaseApi.signInWithRedirect(firebaseApi.auth, firebaseApi.googleProvider)
+          return
+        } catch {
+          setCloudStatus('Google sign-in failed, using local mode')
+          return
+        }
+      }
+
+      setCloudStatus('Google sign-in failed, using local mode')
+    }
+  }
+
+  const signOutFromCloud = async () => {
+    if (!firebaseApi?.auth) {
+      return
+    }
+
+    try {
+      await firebaseApi.signOut(firebaseApi.auth)
+      setCloudStatus('Signed out, local mode only')
+    } catch {
+      setCloudStatus('Sign out failed')
+    }
+  }
+
+  const continueAsGuest = () => {
+    setGuestMode(true)
+    setCloudUid('')
+    setCloudUserLabel('')
+    setCloudStatus('Guest mode (local only)')
+  }
 
   useEffect(() => {
     if (!firebaseApi?.db || !cloudUid) {
@@ -829,6 +877,25 @@ function App() {
           Baseline to retest, phase-based overload, taper, and daily tracking in one place.
         </p>
         <p className="cloud-status">{cloudStatus}</p>
+        {firebaseApi?.firebaseConfigured && (
+          <div className="auth-actions">
+            {cloudUid ? (
+              <>
+                <span className="signed-in-as">Signed in as {cloudUserLabel}</span>
+                <button type="button" className="hero-button" onClick={signOutFromCloud}>Sign out</button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="hero-button" onClick={signInWithGoogle}>
+                  Sign in with Google
+                </button>
+                <button type="button" className="hero-button hero-button-alt" onClick={continueAsGuest}>
+                  Continue as guest
+                </button>
+              </>
+            )}
+          </div>
+        )}
         <div className="hero-metrics">
           <div>
             <strong>{completeCount}</strong>

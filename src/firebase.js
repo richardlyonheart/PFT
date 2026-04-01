@@ -1,5 +1,12 @@
 import { initializeApp } from 'firebase/app'
-import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth'
+import {
+  getAuth,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithRedirect,
+  signOut
+} from 'firebase/auth'
 import { doc, getFirestore, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 
 const firebaseConfig = {
@@ -15,6 +22,7 @@ const firebaseConfigured = Object.values(firebaseConfig).every(Boolean)
 
 let auth = null
 let db = null
+const googleProvider = new GoogleAuthProvider()
 
 if (firebaseConfigured) {
   const app = initializeApp(firebaseConfig)
@@ -27,9 +35,12 @@ export {
   db,
   doc,
   firebaseConfigured,
+  googleProvider,
   onAuthStateChanged,
   onSnapshot,
   serverTimestamp,
   setDoc,
-  signInAnonymously
+  signInWithPopup,
+  signInWithRedirect,
+  signOut
 }
