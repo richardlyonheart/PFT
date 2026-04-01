@@ -546,7 +546,15 @@ function buildProgram() {
 
 function App() {
   const program = useMemo(() => buildProgram(), [])
-  const [selectedDay, setSelectedDay] = useState(0)
+  const [selectedDay, setSelectedDay] = useState(() => {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    const savedLogs = raw ? JSON.parse(raw) : {}
+    for (let i = 0; i <= 60; i++) {
+      if (!savedLogs[i]?.complete) return i
+    }
+    return 60
+  })
+  const [activeTab, setActiveTab] = useState('day')
   const [logs, setLogs] = useState(() => {
     const raw = localStorage.getItem(STORAGE_KEY)
     return raw ? JSON.parse(raw) : {}
@@ -839,6 +847,11 @@ function App() {
     }))
   }
 
+  const handleSelectDay = (day) => {
+    setSelectedDay(day)
+    setActiveTab('day')
+  }
+
   const startOrPauseWorkout = () => {
     setSessionState((current) => {
       if (current.status === 'running') {
@@ -934,9 +947,6 @@ function App() {
       <header className="hero-panel">
         <p className="eyebrow">60-Day Performance Builder</p>
         <h1>Row + Push-ups + Plank</h1>
-        <p>
-          Baseline to retest, phase-based overload, taper, and daily tracking in one place.
-        </p>
         <p className="cloud-status">{cloudStatus}</p>
         {authError && <p className="auth-error">{authError}</p>}
         {firebaseApi?.firebaseConfigured && (
@@ -961,213 +971,267 @@ function App() {
         <div className="hero-metrics">
           <div>
             <strong>{completeCount}</strong>
-            <span>days completed</span>
+            <span>days done</span>
           </div>
           <div>
-            <strong>5/2</strong>
-            <span>train/recovery rhythm</span>
+            <strong>Day {selectedDay}</strong>
+            <span>{selectedPlan.title}</span>
           </div>
           <div>
             <strong>60</strong>
             <span>total days</span>
           </div>
         </div>
-        <div className="goal-inline">
-          <span>Goal 2k: {formatSeconds(goalMetrics.row2kGoalSeconds)}</span>
-          <span>Goal Push-ups: {Math.round(goalMetrics.pushupGoal)} in 1 min</span>
-          <span>Goal Plank: {formatSeconds(goalMetrics.plankGoalSeconds)}</span>
-        </div>
       </header>
 
-      <main className="layout">
-        <aside className="day-list">
-          <h2>Program Calendar</h2>
-          {program.map((item) => (
-            <button
-              key={item.day}
-              type="button"
-              className={`day-chip ${item.day === selectedDay ? 'active' : ''}`}
-              onClick={() => setSelectedDay(item.day)}
-            >
-              <span>Day {item.day}</span>
-              <small>{item.title}</small>
-            </button>
-          ))}
-        </aside>
+      <main className="tab-content">
+        {activeTab === 'calendar' && (
+          <div className="day-list-page">
+            <h2>Program Calendar</h2>
+            {program.map((item) => (
+              <button
+                key={item.day}
+                type="button"
+                className={`day-chip ${item.day === selectedDay ? 'active' : ''} ${logs[item.day]?.complete ? 'done' : ''}`}
+                onClick={() => handleSelectDay(item.day)}
+              >
+                <span>Day {item.day}{logs[item.day]?.complete ? ' ✓' : ''}</span>
+                <small>{item.title}</small>
+              </button>
+            ))}
+          </div>
+        )}
 
-        <section className="day-details">
-          <div className="card">
-            <p className="phase-tag">{selectedPlan.phase}</p>
-            <h2>
-              Day {selectedPlan.day}: {selectedPlan.title}
-            </h2>
-            <p className="subline">
-              {selectedPlan.week > 0 ? `Week ${selectedPlan.week}` : 'Preparation'} | {selectedPlan.dayName}
-            </p>
+        {activeTab === 'day' && (
+          <div className="day-details">
+            <div className="card">
+              <p className="phase-tag">{selectedPlan.phase}</p>
+              <h2>
+                Day {selectedPlan.day}: {selectedPlan.title}
+              </h2>
+              <p className="subline">
+                {selectedPlan.week > 0 ? `Week ${selectedPlan.week}` : 'Preparation'} | {selectedPlan.dayName}
+              </p>
 
-            <div className="target-box">
-              <h3>Today's Targets</h3>
-              {!baseline.hasCompleteBaseline && selectedPlan.day > 0 && (
-                <p className="baseline-note">
-                  Add Day 0 baseline values to personalize targets. Showing starter defaults until then.
-                </p>
-              )}
-              <ul>
-                {dayTargets.map((target, index) => (
-                  <li key={index}>{target}</li>
-                ))}
-              </ul>
-            </div>
-
-            <ul>
-              {selectedPlan.workouts.map((work, index) => (
-                <li key={index}>{work}</li>
-              ))}
-            </ul>
-
-            {selectedPlan.notes?.length > 0 && (
-              <div className="notes">
-                <h3>Progression Notes</h3>
+              <div className="target-box">
+                <h3>Today's Targets</h3>
+                {!baseline.hasCompleteBaseline && selectedPlan.day > 0 && (
+                  <p className="baseline-note">
+                    Add Day 0 baseline values to personalize targets. Showing starter defaults until then.
+                  </p>
+                )}
                 <ul>
-                  {selectedPlan.notes.map((note, index) => (
-                    <li key={index}>{note}</li>
+                  {dayTargets.map((target, index) => (
+                    <li key={index}>{target}</li>
                   ))}
                 </ul>
               </div>
-            )}
-          </div>
 
-          <div className="card tracker">
-            <h3>Target Goals (Day 60)</h3>
-            <div className="field-grid">
-              <label>
-                Row 2k goal time
-                <input
-                  value={goals.row2kGoal}
-                  onChange={(event) => updateGoal('row2kGoal', event.target.value)}
-                  placeholder="e.g. 7:00"
-                />
-              </label>
-              <label>
-                Push-up goal (in 1 minute)
-                <input
-                  value={goals.pushupGoal}
-                  onChange={(event) => updateGoal('pushupGoal', event.target.value)}
-                  placeholder="e.g. 60"
-                />
-              </label>
-              <label>
-                Plank goal time
-                <input
-                  value={goals.plankGoal}
-                  onChange={(event) => updateGoal('plankGoal', event.target.value)}
-                  placeholder="e.g. 3:20"
-                />
-              </label>
-            </div>
+              <ul>
+                {selectedPlan.workouts.map((work, index) => (
+                  <li key={index}>{work}</li>
+                ))}
+              </ul>
 
-            <h3>Daily Log</h3>
-            <div className="field-grid">
-              <label>
-                Row time / distance
-                <input
-                  value={selectedLog.row || ''}
-                  onChange={(event) => updateLog('row', event.target.value)}
-                  placeholder="e.g. 2k in 08:14"
-                />
-              </label>
-              <label>
-                Push-up result
-                <input
-                  value={selectedLog.pushups || ''}
-                  onChange={(event) => updateLog('pushups', event.target.value)}
-                  placeholder="e.g. 5x22"
-                />
-              </label>
-              <label>
-                Plank result
-                <input
-                  value={selectedLog.plank || ''}
-                  onChange={(event) => updateLog('plank', event.target.value)}
-                  placeholder="e.g. 3x75s"
-                />
-              </label>
-              <label>
-                RPE (1-10)
-                <input
-                  value={selectedLog.rpe || ''}
-                  onChange={(event) => updateLog('rpe', event.target.value)}
-                  placeholder="e.g. 7"
-                />
-              </label>
-            </div>
-
-            <label className="notes-input">
-              Notes
-              <textarea
-                value={selectedLog.notes || ''}
-                onChange={(event) => updateLog('notes', event.target.value)}
-                placeholder="Sleep, soreness, pacing notes, and adjustments"
-              />
-            </label>
-
-            <label className="check-row">
-              <input
-                type="checkbox"
-                checked={Boolean(selectedLog.complete)}
-                onChange={(event) => updateLog('complete', event.target.checked)}
-              />
-              Mark day complete
-            </label>
-          </div>
-
-          <div className="card timer-card">
-            <h3>Workout Timer</h3>
-            <p className="timer-status">Status: {sessionState.status}</p>
-            {sessionState.status === 'complete' && (
-              <p className="timer-complete">Workout complete. Day marked as complete.</p>
-            )}
-            <div className={`timer-panel ${currentStep ? `intensity-${currentStep.intensity}` : ''}`}>
-              <p className="timer-step">{currentStep ? currentStep.label : 'No session steps for today'}</p>
-              {currentStep?.intensity && (
-                <p className={`timer-intensity intensity-pill intensity-${currentStep.intensity}`}>
-                  Intensity: {currentStep.intensity}
-                </p>
+              {selectedPlan.notes?.length > 0 && (
+                <div className="notes">
+                  <h3>Progression Notes</h3>
+                  <ul>
+                    {selectedPlan.notes.map((note, index) => (
+                      <li key={index}>{note}</li>
+                    ))}
+                  </ul>
+                </div>
               )}
-              {currentStep?.pace && <p className="timer-pace">Row pace target: {currentStep.pace}</p>}
-              <p className="timer-countdown">{formatSeconds(sessionState.remaining)}</p>
-              <p className="timer-progress">
-                Step {Math.min(sessionState.stepIndex + 1, sessionSteps.length)} of {sessionSteps.length}
+            </div>
+
+            <div className="card tracker">
+              <h3>Daily Log</h3>
+              <div className="field-grid">
+                <label>
+                  Row time / distance
+                  <input
+                    value={selectedLog.row || ''}
+                    onChange={(event) => updateLog('row', event.target.value)}
+                    placeholder="e.g. 2k in 08:14"
+                  />
+                </label>
+                <label>
+                  Push-up result
+                  <input
+                    value={selectedLog.pushups || ''}
+                    onChange={(event) => updateLog('pushups', event.target.value)}
+                    placeholder="e.g. 5x22"
+                  />
+                </label>
+                <label>
+                  Plank result
+                  <input
+                    value={selectedLog.plank || ''}
+                    onChange={(event) => updateLog('plank', event.target.value)}
+                    placeholder="e.g. 3x75s"
+                  />
+                </label>
+                <label>
+                  RPE (1-10)
+                  <input
+                    value={selectedLog.rpe || ''}
+                    onChange={(event) => updateLog('rpe', event.target.value)}
+                    placeholder="e.g. 7"
+                  />
+                </label>
+              </div>
+
+              <label className="notes-input">
+                Notes
+                <textarea
+                  value={selectedLog.notes || ''}
+                  onChange={(event) => updateLog('notes', event.target.value)}
+                  placeholder="Sleep, soreness, pacing notes, and adjustments"
+                />
+              </label>
+
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={Boolean(selectedLog.complete)}
+                  onChange={(event) => updateLog('complete', event.target.checked)}
+                />
+                Mark day complete
+              </label>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'goals' && (
+          <div className="day-details">
+            <div className="card tracker">
+              <h3>Target Goals (Day 60)</h3>
+              <div className="field-grid">
+                <label>
+                  Row 2k goal time
+                  <input
+                    value={goals.row2kGoal}
+                    onChange={(event) => updateGoal('row2kGoal', event.target.value)}
+                    placeholder="e.g. 7:00"
+                  />
+                </label>
+                <label>
+                  Push-up goal (in 1 minute)
+                  <input
+                    value={goals.pushupGoal}
+                    onChange={(event) => updateGoal('pushupGoal', event.target.value)}
+                    placeholder="e.g. 60"
+                  />
+                </label>
+                <label>
+                  Plank goal time
+                  <input
+                    value={goals.plankGoal}
+                    onChange={(event) => updateGoal('plankGoal', event.target.value)}
+                    placeholder="e.g. 3:20"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="card safety">
+              <h3>Warm-up, Recovery, and Scaling</h3>
+              <ul>
+                <li>Warm up 10-15 min and cool down 5-10 min every session.</li>
+                <li>Deload for a week if fatigue persists or performance drops.</li>
+                <li>Push-up scaling: incline to knee to full strict reps.</li>
+                <li>Plank scaling: shorter sets or knee plank while maintaining position quality.</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'timer' && (
+          <div className="day-details">
+            <div className="card">
+              <p className="phase-tag">{selectedPlan.phase}</p>
+              <h2>
+                Day {selectedPlan.day}: {selectedPlan.title}
+              </h2>
+              <p className="subline">
+                {selectedPlan.week > 0 ? `Week ${selectedPlan.week}` : 'Preparation'} | {selectedPlan.dayName}
               </p>
             </div>
-            <div className="timer-actions">
-              <button type="button" onClick={startOrPauseWorkout} className="action-button">
-                {sessionState.status === 'running'
-                  ? 'Pause Workout'
-                  : sessionState.status === 'paused'
-                    ? 'Resume Workout'
-                    : 'Start Workout'}
-              </button>
-              <button type="button" onClick={skipStep} className="ghost-button" disabled={sessionState.status === 'idle'}>
-                Skip Step
-              </button>
-              <button type="button" onClick={resetWorkout} className="ghost-button">
-                Reset
-              </button>
+
+            <div className="card timer-card">
+              <h3>Workout Timer</h3>
+              <p className="timer-status">Status: {sessionState.status}</p>
+              {sessionState.status === 'complete' && (
+                <p className="timer-complete">Workout complete. Day marked as complete.</p>
+              )}
+              <div className={`timer-panel ${currentStep ? `intensity-${currentStep.intensity}` : ''}`}>
+                <p className="timer-step">{currentStep ? currentStep.label : 'No session steps for today'}</p>
+                {currentStep?.intensity && (
+                  <p className={`timer-intensity intensity-pill intensity-${currentStep.intensity}`}>
+                    Intensity: {currentStep.intensity}
+                  </p>
+                )}
+                {currentStep?.pace && <p className="timer-pace">Row pace target: {currentStep.pace}</p>}
+                <p className="timer-countdown">{formatSeconds(sessionState.remaining)}</p>
+                <p className="timer-progress">
+                  Step {Math.min(sessionState.stepIndex + 1, sessionSteps.length)} of {sessionSteps.length}
+                </p>
+              </div>
+              <div className="timer-actions">
+                <button type="button" onClick={startOrPauseWorkout} className="action-button">
+                  {sessionState.status === 'running'
+                    ? 'Pause Workout'
+                    : sessionState.status === 'paused'
+                      ? 'Resume Workout'
+                      : 'Start Workout'}
+                </button>
+                <button type="button" onClick={skipStep} className="ghost-button" disabled={sessionState.status === 'idle'}>
+                  Skip Step
+                </button>
+                <button type="button" onClick={resetWorkout} className="ghost-button">
+                  Reset
+                </button>
+              </div>
             </div>
           </div>
-
-          <div className="card safety">
-            <h3>Warm-up, Recovery, and Scaling</h3>
-            <ul>
-              <li>Warm up 10-15 min and cool down 5-10 min every session.</li>
-              <li>Deload for a week if fatigue persists or performance drops.</li>
-              <li>Push-up scaling: incline to knee to full strict reps.</li>
-              <li>Plank scaling: shorter sets or knee plank while maintaining position quality.</li>
-            </ul>
-          </div>
-        </section>
+        )}
       </main>
+
+      <nav className="bottom-nav">
+        <button
+          type="button"
+          className={`nav-tab ${activeTab === 'calendar' ? 'active' : ''}`}
+          onClick={() => setActiveTab('calendar')}
+        >
+          <span className="nav-icon">📅</span>
+          <span>Calendar</span>
+        </button>
+        <button
+          type="button"
+          className={`nav-tab ${activeTab === 'day' ? 'active' : ''}`}
+          onClick={() => setActiveTab('day')}
+        >
+          <span className="nav-icon">📋</span>
+          <span>Day {selectedDay}</span>
+        </button>
+        <button
+          type="button"
+          className={`nav-tab ${activeTab === 'goals' ? 'active' : ''}`}
+          onClick={() => setActiveTab('goals')}
+        >
+          <span className="nav-icon">🎯</span>
+          <span>Goals</span>
+        </button>
+        <button
+          type="button"
+          className={`nav-tab ${activeTab === 'timer' ? 'active' : ''}`}
+          onClick={() => setActiveTab('timer')}
+        >
+          <span className="nav-icon">⏱</span>
+          <span>Timer</span>
+        </button>
+      </nav>
     </div>
   )
 }
