@@ -545,7 +545,6 @@ function buildProgram() {
 }
 
 function App() {
-  const isMobileBrowser = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
   const program = useMemo(() => buildProgram(), [])
   const [selectedDay, setSelectedDay] = useState(0)
   const [logs, setLogs] = useState(() => {
@@ -569,6 +568,7 @@ function App() {
   const [cloudUid, setCloudUid] = useState('')
   const [cloudUserLabel, setCloudUserLabel] = useState('')
   const [guestMode, setGuestMode] = useState(false)
+  const [authError, setAuthError] = useState('')
   const applyingRemoteRef = useRef(false)
   const lastCloudPayloadRef = useRef('')
 
@@ -616,6 +616,7 @@ function App() {
     const unsubscribe = firebaseApi.onAuthStateChanged(firebaseApi.auth, (user) => {
       if (user) {
         setGuestMode(false)
+        setAuthError('')
         setCloudUid(user.uid)
         const label = user.displayName || user.email || user.uid.slice(0, 8)
         setCloudUserLabel(label)
@@ -638,11 +639,15 @@ function App() {
 
     firebaseApi.getRedirectResult(firebaseApi.auth).catch((error) => {
       if (error?.code === 'auth/unauthorized-domain') {
-        setCloudStatus('Google sign-in blocked: add this domain in Firebase authorized domains')
+        const message = 'Google sign-in blocked: add this domain in Firebase authorized domains'
+        setAuthError(message)
+        setCloudStatus(message)
         return
       }
 
-      setCloudStatus(`Google sign-in failed (${error?.code || 'unknown error'})`)
+      const message = `Google sign-in failed (${error?.code || 'unknown error'})`
+      setAuthError(message)
+      setCloudStatus(message)
     })
   }, [firebaseApi])
 
@@ -652,41 +657,23 @@ function App() {
     }
 
     setGuestMode(false)
+    setAuthError('')
     setCloudStatus('Signing in with Google...')
 
     try {
-      if (isMobileBrowser) {
-        await firebaseApi.signInWithRedirect(firebaseApi.auth, firebaseApi.googleProvider)
-        return
-      }
-
-      await firebaseApi.signInWithPopup(firebaseApi.auth, firebaseApi.googleProvider)
+      await firebaseApi.signInWithRedirect(firebaseApi.auth, firebaseApi.googleProvider)
     } catch (error) {
-      if (
-        error?.code === 'auth/popup-blocked' ||
-        error?.code === 'auth/cancelled-popup-request' ||
-        error?.code === 'auth/operation-not-supported-in-this-environment'
-      ) {
-        try {
-          await firebaseApi.signInWithRedirect(firebaseApi.auth, firebaseApi.googleProvider)
-          return
-        } catch (redirectError) {
-          if (redirectError?.code === 'auth/unauthorized-domain') {
-            setCloudStatus('Google sign-in blocked: add this domain in Firebase authorized domains')
-            return
-          }
-
-          setCloudStatus(`Google sign-in failed (${redirectError?.code || 'unknown error'})`)
-          return
-        }
-      }
 
       if (error?.code === 'auth/unauthorized-domain') {
-        setCloudStatus('Google sign-in blocked: add this domain in Firebase authorized domains')
+        const message = 'Google sign-in blocked: add this domain in Firebase authorized domains'
+        setAuthError(message)
+        setCloudStatus(message)
         return
       }
 
-      setCloudStatus(`Google sign-in failed (${error?.code || 'unknown error'})`)
+      const message = `Google sign-in failed (${error?.code || 'unknown error'})`
+      setAuthError(message)
+      setCloudStatus(message)
     }
   }
 
@@ -705,6 +692,7 @@ function App() {
 
   const continueAsGuest = () => {
     setGuestMode(true)
+      setAuthError('')
     setCloudUid('')
     setCloudUserLabel('')
     setCloudStatus('Guest mode (local only)')
@@ -912,6 +900,7 @@ function App() {
           Baseline to retest, phase-based overload, taper, and daily tracking in one place.
         </p>
         <p className="cloud-status">{cloudStatus}</p>
+        {authError && <p className="auth-error">{authError}</p>}
         {firebaseApi?.firebaseConfigured && (
           <div className="auth-actions">
             {cloudUid ? (

@@ -43,6 +43,17 @@
   padding: 0.2rem 0.6rem;
 }
 
+.auth-error {
+  margin: 0.45rem 0 0;
+  font-size: 0.82rem;
+  color: #fff5f5;
+  background: rgba(153, 27, 27, 0.35);
+  border: 1px solid rgba(255, 210, 210, 0.45);
+  border-radius: 10px;
+  padding: 0.35rem 0.6rem;
+  max-width: 72ch;
+}
+
 .auth-actions {
   margin-top: 0.65rem;
   display: flex;
