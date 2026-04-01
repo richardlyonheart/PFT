@@ -679,11 +679,27 @@ function App() {
     setCloudStatus('Signing in with Google...')
 
     try {
-      // Ensure persistence is set before redirect
+      // Ensure persistence is set first
       await firebaseApi.setPersistence(firebaseApi.auth, firebaseApi.browserLocalPersistence)
         .catch(() => firebaseApi.setPersistence(firebaseApi.auth, firebaseApi.browserSessionPersistence))
       
-      await firebaseApi.signInWithRedirect(firebaseApi.auth, firebaseApi.googleProvider)
+      // Try popup first (works on modern mobile and desktop)
+      try {
+        await firebaseApi.signInWithPopup(firebaseApi.auth, firebaseApi.googleProvider)
+        return
+      } catch (popupError) {
+        // Popup failed; try redirect for some browsers
+        if (
+          popupError?.code === 'auth/popup-blocked' ||
+          popupError?.code === 'auth/cancelled-popup-request' ||
+          popupError?.code === 'auth/operation-not-supported-in-this-environment'
+        ) {
+          await firebaseApi.signInWithRedirect(firebaseApi.auth, firebaseApi.googleProvider)
+          return
+        }
+        // If it's not popup-specific, re-throw
+        throw popupError
+      }
     } catch (error) {
       if (error?.code === 'auth/unauthorized-domain') {
         const message = 'Google sign-in blocked: add this domain in Firebase authorized domains'
@@ -695,6 +711,7 @@ function App() {
       const message = `Google sign-in failed (${error?.code || 'unknown error'})`
       setAuthError(message)
       setCloudStatus(message)
+      console.error('Sign-in error:', error)
     }
   }
 
