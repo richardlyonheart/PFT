@@ -653,7 +653,9 @@ function App() {
       return
     }
 
-    firebaseApi.getRedirectResult(firebaseApi.auth).catch((error) => {
+    firebaseApi.getRedirectResult(firebaseApi.auth).then(() => {
+      // redirect result consumed, auth state listener will handle user
+    }).catch((error) => {
       if (error?.code === 'auth/unauthorized-domain') {
         const message = 'Google sign-in blocked: add this domain in Firebase authorized domains'
         setAuthError(message)
@@ -677,9 +679,12 @@ function App() {
     setCloudStatus('Signing in with Google...')
 
     try {
+      // Ensure persistence is set before redirect
+      await firebaseApi.setPersistence(firebaseApi.auth, firebaseApi.browserLocalPersistence)
+        .catch(() => firebaseApi.setPersistence(firebaseApi.auth, firebaseApi.browserSessionPersistence))
+      
       await firebaseApi.signInWithRedirect(firebaseApi.auth, firebaseApi.googleProvider)
     } catch (error) {
-
       if (error?.code === 'auth/unauthorized-domain') {
         const message = 'Google sign-in blocked: add this domain in Firebase authorized domains'
         setAuthError(message)
