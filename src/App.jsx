@@ -613,6 +613,19 @@ function App() {
       return undefined
     }
 
+    let cancelled = false
+
+    firebaseApi
+      .setPersistence(firebaseApi.auth, firebaseApi.browserLocalPersistence)
+      .catch(() => firebaseApi.setPersistence(firebaseApi.auth, firebaseApi.browserSessionPersistence))
+      .catch(() => {
+        if (!cancelled) {
+          const message = 'Browser blocked sign-in persistence; disable private mode for saved login'
+          setAuthError(message)
+          setCloudStatus(message)
+        }
+      })
+
     const unsubscribe = firebaseApi.onAuthStateChanged(firebaseApi.auth, (user) => {
       if (user) {
         setGuestMode(false)
@@ -629,7 +642,10 @@ function App() {
       setCloudStatus(guestMode ? 'Guest mode (local only)' : 'Sign in with Google for cloud sync')
     })
 
-    return unsubscribe
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
   }, [firebaseApi, guestMode])
 
   useEffect(() => {

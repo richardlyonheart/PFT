@@ -1,9 +1,12 @@
 import { initializeApp } from 'firebase/app'
 import {
+  browserLocalPersistence,
+  browserSessionPersistence,
   getRedirectResult,
   getAuth,
   GoogleAuthProvider,
   onAuthStateChanged,
+  setPersistence,
   signInWithPopup,
   signInWithRedirect,
   signOut
@@ -33,6 +36,8 @@ if (firebaseConfigured) {
 
 export {
   auth,
+  browserLocalPersistence,
+  browserSessionPersistence,
   db,
   doc,
   firebaseConfigured,
@@ -41,6 +46,7 @@ export {
   onAuthStateChanged,
   onSnapshot,
   serverTimestamp,
+  setPersistence,
   setDoc,
   signInWithPopup,
   signInWithRedirect,
