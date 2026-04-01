@@ -545,6 +545,7 @@ function buildProgram() {
 }
 
 function App() {
+  const isMobileBrowser = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
   const program = useMemo(() => buildProgram(), [])
   const [selectedDay, setSelectedDay] = useState(0)
   const [logs, setLogs] = useState(() => {
@@ -630,6 +631,21 @@ function App() {
     return unsubscribe
   }, [firebaseApi, guestMode])
 
+  useEffect(() => {
+    if (!firebaseApi?.auth) {
+      return
+    }
+
+    firebaseApi.getRedirectResult(firebaseApi.auth).catch((error) => {
+      if (error?.code === 'auth/unauthorized-domain') {
+        setCloudStatus('Google sign-in blocked: add this domain in Firebase authorized domains')
+        return
+      }
+
+      setCloudStatus(`Google sign-in failed (${error?.code || 'unknown error'})`)
+    })
+  }, [firebaseApi])
+
   const signInWithGoogle = async () => {
     if (!firebaseApi?.auth) {
       return
@@ -639,19 +655,38 @@ function App() {
     setCloudStatus('Signing in with Google...')
 
     try {
+      if (isMobileBrowser) {
+        await firebaseApi.signInWithRedirect(firebaseApi.auth, firebaseApi.googleProvider)
+        return
+      }
+
       await firebaseApi.signInWithPopup(firebaseApi.auth, firebaseApi.googleProvider)
     } catch (error) {
-      if (error?.code === 'auth/popup-blocked' || error?.code === 'auth/cancelled-popup-request') {
+      if (
+        error?.code === 'auth/popup-blocked' ||
+        error?.code === 'auth/cancelled-popup-request' ||
+        error?.code === 'auth/operation-not-supported-in-this-environment'
+      ) {
         try {
           await firebaseApi.signInWithRedirect(firebaseApi.auth, firebaseApi.googleProvider)
           return
-        } catch {
-          setCloudStatus('Google sign-in failed, using local mode')
+        } catch (redirectError) {
+          if (redirectError?.code === 'auth/unauthorized-domain') {
+            setCloudStatus('Google sign-in blocked: add this domain in Firebase authorized domains')
+            return
+          }
+
+          setCloudStatus(`Google sign-in failed (${redirectError?.code || 'unknown error'})`)
           return
         }
       }
 
-      setCloudStatus('Google sign-in failed, using local mode')
+      if (error?.code === 'auth/unauthorized-domain') {
+        setCloudStatus('Google sign-in blocked: add this domain in Firebase authorized domains')
+        return
+      }
+
+      setCloudStatus(`Google sign-in failed (${error?.code || 'unknown error'})`)
     }
   }
 

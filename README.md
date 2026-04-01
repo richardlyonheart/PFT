@@ -75,8 +75,9 @@ This project supports Firebase Google Sign-In + Firestore sync.
 
 1. Create a Firebase project in the Firebase console.
 2. Enable Authentication -> Sign-in method -> Google.
-3. Create a Firestore database.
-4. Copy `.env.example` to `.env` and fill in your Firebase values:
+3. In Authentication -> Settings -> Authorized domains, add your Vercel domain (and any custom domain).
+4. Create a Firestore database.
+5. Copy `.env.example` to `.env` and fill in your Firebase values:
 
 ```bash
 VITE_FIREBASE_API_KEY=
@@ -87,7 +88,7 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 ```
 
-5. Restart dev server after adding env vars.
+6. Restart dev server after adding env vars.
 
 Suggested Firestore rules for user-isolated sync:
 

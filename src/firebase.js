@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import {
+  getRedirectResult,
   getAuth,
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -36,6 +37,7 @@ export {
   doc,
   firebaseConfigured,
   googleProvider,
+  getRedirectResult,
   onAuthStateChanged,
   onSnapshot,
   serverTimestamp,
