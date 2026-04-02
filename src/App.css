@@ -409,6 +409,11 @@ textarea {
   font-weight: normal;
 }
 
+.checklist-item.is-swim .checklist-time {
+  color: #1a5fa8;
+  font-weight: 700;
+}
+
 .timer-countdown {
   margin: 0.3rem 0;
   font-size: 2rem;

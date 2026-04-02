@@ -127,7 +127,6 @@ function getTemplateWorkouts(dayName, selectedWorkoutIds) {
   if (dayName === 'Monday') {
     if (has('row2k')) lines.push('Row: 6x3 min at 90-95% race pace')
     if (has('run15')) lines.push('Run: 6x2 min hard with 2 min easy jog')
-    if (has('swim450m') || has('swim500y')) lines.push('Swim: 8x50 moderate-hard with form focus')
     lines.push('Cooldown: 5-10 min easy')
     return lines
   }
@@ -135,40 +134,50 @@ function getTemplateWorkouts(dayName, selectedWorkoutIds) {
   if (dayName === 'Tuesday') {
     if (has('pushups')) lines.push('Push-ups: 5 sets at 60-70% max, 90s rest')
     if (has('plank')) lines.push('Plank: 4 sets at 50-70% max hold, 60s rest')
-    if (has('run15') || has('swim450m') || has('swim500y')) lines.push('Optional easy cardio flush: 15-20 min')
+    if (has('run15')) lines.push('Optional easy cardio flush: 15-20 min')
     return lines
   }
 
   if (dayName === 'Wednesday') {
+    if (has('swim450m') || has('swim500y')) {
+      lines.push('Swim warm-up: 5 min easy')
+      lines.push('Technique drills: 4x50 form focus')
+      lines.push('Sustained swim: 20-35 min moderate pace')
+      lines.push('Cool-down: 5 min easy swim')
+      return lines
+    }
     if (has('row2k')) lines.push('Row steady 30-45 min at conversational effort (RPE 5-6)')
     if (has('run15')) lines.push('Steady run 20-35 min at conversational effort')
-    if (has('swim450m') || has('swim500y')) lines.push('Steady swim 20-30 min easy-moderate')
     return lines
   }
 
   if (dayName === 'Thursday') {
     if (has('pushups')) lines.push('Push-up pyramid progression with reduced weekly rest')
     if (has('plank')) lines.push('Plank ladder progression with strict form')
-    if (has('row2k') || has('run15') || has('swim450m') || has('swim500y')) lines.push('Finish with 10-15 min easy cardio')
+    if (has('row2k') || has('run15')) lines.push('Finish with 10-15 min easy cardio')
     return lines
   }
 
   if (dayName === 'Friday') {
     if (has('row2k')) lines.push('Row: 10-12x1 min hard with 1 min rest')
     if (has('run15')) lines.push('Run: 10x1 min fast with 1 min easy jog')
-    if (has('swim450m') || has('swim500y')) lines.push('Swim: 10x50 hard with short rest')
     if (has('plank')) lines.push('Plank: 3 hard holds, stop before failure')
     return lines
   }
 
   if (dayName === 'Saturday') {
+    if (has('swim450m') || has('swim500y')) {
+      lines.push('Swim warm-up: 5 min easy')
+      lines.push('Long endurance swim: 25-45 min easy, focus on breathing rhythm')
+      lines.push('Cool-down: 5 min easy swim')
+      return lines
+    }
     if (has('row2k')) lines.push('Long easy row 45-75 min')
     if (has('run15')) lines.push('Long easy run 25-60 min')
-    if (has('swim450m') || has('swim500y')) lines.push('Long easy swim 20-45 min')
     return lines
   }
 
-  lines.push('Active recovery: mobility, walking, easy swim, and foam rolling')
+  lines.push('Active recovery: mobility, walking, and foam rolling')
   return lines
 }
 
@@ -277,6 +286,7 @@ function getDailyPrescription(plan, baseline, goals, config) {
   const totalDays = clamp(config?.programDays || DEFAULT_PROGRAM_DAYS, MIN_PROGRAM_DAYS, MAX_PROGRAM_DAYS)
   const selectedWorkouts = getSelectedWorkoutIds(config?.selectedWorkouts)
   const has = (id) => selectedWorkouts.includes(id)
+  const hasSwim = has('swim450m') || has('swim500y')
   const cycleProgress = clamp(plan.day / totalDays, 0, 1)
   const current2kCapacity = baseline.row2kSeconds + (goals.row2kGoalSeconds - baseline.row2kSeconds) * cycleProgress
   const currentPushCapacity = baseline.pushupMax + (goals.pushupGoal - baseline.pushupMax) * cycleProgress
@@ -306,8 +316,15 @@ function getDailyPrescription(plan, baseline, goals, config) {
   }
 
   if (plan.phase === 'Taper') {
+    if (hasSwim) {
+      return [
+        'Swim-only taper: 10-15 min easy swim with smooth strokes',
+        'Optional: 2x50 relaxed technical pickups',
+        'Hydrate, sleep well, and avoid hard efforts'
+      ]
+    }
     const taper = []
-    if (has('row2k') || has('run15') || has('swim450m') || has('swim500y')) {
+    if (has('row2k') || has('run15')) {
       taper.push('Cardio: 15-25 min easy, keep effort light and smooth')
       taper.push('Optional primer: 3x1 min moderate with 2 min easy recovery')
     }
@@ -336,7 +353,6 @@ function getDailyPrescription(plan, baseline, goals, config) {
       lines.push(`Recovery: ${rest}s easy row between reps`)
     }
     if (has('run15')) lines.push('Run: 6x2 min hard with 2 min easy jog')
-    if (has('swim450m') || has('swim500y')) lines.push('Swim: 8x50 at moderate-hard effort with technical focus')
   } else if (plan.dayName === 'Tuesday') {
     if (has('pushups')) {
       const lowPct = clamp(0.6 + weekBoost, 0.6, 0.78)
@@ -350,15 +366,21 @@ function getDailyPrescription(plan, baseline, goals, config) {
       const plankHigh = Math.max(plankLow + 5, Math.round(currentPlankCapacity * (0.65 + weekBoost * 0.6)))
       lines.push(`Plank: 4 sets of ${plankLow}-${plankHigh}s`)
     }
-    if (has('run15') || has('swim450m') || has('swim500y')) lines.push('Optional easy cardio flush: 15-20 min')
+    if (has('run15')) lines.push('Optional easy cardio flush: 15-20 min')
   } else if (plan.dayName === 'Wednesday') {
-    const duration = Math.min(45, Math.round(30 + (plan.week - 1) * 2))
-    if (has('row2k')) {
-      lines.push(`Row steady: ${duration} min`)
-      lines.push(`Pace guide: ${formatSplit(baseSplit + 22)} to ${formatSplit(baseSplit + 30)}`)
+    if (has('swim450m') || has('swim500y')) {
+      const mainDuration = Math.min(35, Math.round(20 + (plan.week - 1) * 2))
+      lines.push('Swim: 5 min easy warm-up, then technique drills (4x50)')
+      lines.push(`Sustained swim: ${mainDuration} min at moderate effort`)
+      lines.push('Cool-down: 5 min easy swim')
+    } else {
+      const duration = Math.min(45, Math.round(30 + (plan.week - 1) * 2))
+      if (has('row2k')) {
+        lines.push(`Row steady: ${duration} min`)
+        lines.push(`Pace guide: ${formatSplit(baseSplit + 22)} to ${formatSplit(baseSplit + 30)}`)
+      }
+      if (has('run15')) lines.push(`Run steady: ${Math.max(20, duration - 5)} min at conversational effort`)
     }
-    if (has('run15')) lines.push(`Run steady: ${Math.max(20, duration - 5)} min at conversational effort`)
-    if (has('swim450m') || has('swim500y')) lines.push(`Swim steady: ${Math.max(20, duration - 10)} min easy-moderate`)
   } else if (plan.dayName === 'Thursday') {
     if (has('pushups')) {
       const center = Math.max(6, Math.round(currentPushCapacity * (0.42 + weekBoost * 0.6)))
@@ -369,7 +391,7 @@ function getDailyPrescription(plan, baseline, goals, config) {
       const step = clamp(20 + plan.week * 3, 20, 45)
       lines.push(`Plank ladder: ${step}s / ${step * 2}s / ${step * 3}s / ${step * 2}s / ${step}s`)
     }
-    if (has('row2k') || has('run15') || has('swim450m') || has('swim500y')) lines.push('Finish with 10-15 min easy cardio')
+    if (has('row2k') || has('run15')) lines.push('Finish with 10-15 min easy cardio')
   } else if (plan.dayName === 'Friday') {
     if (has('row2k')) {
       const reps = plan.week >= 7 ? 12 : 10
@@ -377,21 +399,25 @@ function getDailyPrescription(plan, baseline, goals, config) {
       lines.push(`Hard pace target: ${formatSplit(baseSplit - 2)} to ${formatSplit(baseSplit + 2)}`)
     }
     if (has('run15')) lines.push('Run speed: 10x1 min fast with 1 min easy')
-    if (has('swim450m') || has('swim500y')) lines.push('Swim speed: 10x50 hard with 30-45s rest')
     if (has('plank')) {
       const hold = Math.max(25, Math.round(currentPlankCapacity * (0.7 + weekBoost * 0.5)))
       lines.push(`Plank: 3 holds of ${hold}s (stop before form breaks)`)
     }
   } else if (plan.dayName === 'Saturday') {
-    const duration = Math.min(75, Math.round(45 + (plan.week - 1) * 4))
-    if (has('row2k')) {
-      lines.push(`Long easy row: ${duration} min`)
-      lines.push(`Pace guide: ${formatSplit(baseSplit + 24)} to ${formatSplit(baseSplit + 34)}`)
+    if (has('swim450m') || has('swim500y')) {
+      const duration = Math.min(45, Math.round(25 + (plan.week - 1) * 3))
+      lines.push(`Long easy swim: ${duration} min`)
+      lines.push('Cool-down: 5 min easy swim, focus on breathing and stroke efficiency')
+    } else {
+      const duration = Math.min(75, Math.round(45 + (plan.week - 1) * 4))
+      if (has('row2k')) {
+        lines.push(`Long easy row: ${duration} min`)
+        lines.push(`Pace guide: ${formatSplit(baseSplit + 24)} to ${formatSplit(baseSplit + 34)}`)
+      }
+      if (has('run15')) lines.push(`Long easy run: ${Math.max(25, duration - 15)} min`)
     }
-    if (has('run15')) lines.push(`Long easy run: ${Math.max(25, duration - 15)} min`)
-    if (has('swim450m') || has('swim500y')) lines.push(`Long easy swim: ${Math.max(20, duration - 25)} min`)
   } else {
-    lines.push('Active recovery: 20-40 min walk, mobility, or easy swim')
+    lines.push('Active recovery: 20-40 min walk and mobility work')
   }
 
   if (lines.length === 0) {
@@ -424,6 +450,7 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
   const totalDays = clamp(config?.programDays || DEFAULT_PROGRAM_DAYS, MIN_PROGRAM_DAYS, MAX_PROGRAM_DAYS)
   const selectedWorkouts = getSelectedWorkoutIds(config?.selectedWorkouts)
   const has = (id) => selectedWorkouts.includes(id)
+  const hasSwim = has('swim450m') || has('swim500y')
 
   const cycleProgress = clamp(plan.day / totalDays, 0, 1)
   const current2kCapacity = baseline.row2kSeconds + (goals.row2kGoalSeconds - baseline.row2kSeconds) * cycleProgress
@@ -495,7 +522,12 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
   }
 
   if (plan.phase === 'Taper') {
-    if (has('row2k') || has('run15') || has('swim450m') || has('swim500y')) {
+    if (hasSwim) {
+      addStep('Swim-only taper session', 15 * 60, 'work', { isSwim: true, intensity: 'easy' })
+      addStep('Optional relaxed pickups (2x50)', 2 * 60, 'work', { isSwim: true, intensity: 'moderate' })
+      return steps
+    }
+    if (has('row2k') || has('run15')) {
       addStep('Easy cardio', 20 * 60, 'work', { pace: easySplit, intensity: 'easy' })
       for (let i = 1; i <= 3; i += 1) {
         addStep(`Primer ${i}/3 moderate effort`, 60, 'work', { pace: moderateSplit, intensity: 'moderate' })
@@ -541,12 +573,6 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
         if (i < 6) addStep('Easy jog recovery', 120, 'rest')
       }
     }
-    if (has('swim450m') || has('swim500y')) {
-      for (let i = 1; i <= 8; i += 1) {
-        addStep(`Swim rep ${i}/8 moderate-hard`, 50, 'work', { intensity: 'hard', isSwim: true })
-        if (i < 8) addStep('Swim rest', 40, 'rest')
-      }
-    }
     addStep('Cooldown easy cardio', 6 * 60, 'cooldown')
     return steps
   }
@@ -573,6 +599,17 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
   }
 
   if (plan.dayName === 'Wednesday') {
+    if (has('swim450m') || has('swim500y')) {
+      const swimId = has('swim450m') ? 'swim450m' : 'swim500y'
+      const swimBase = swimId === 'swim450m' ? swim450Base : swim500yBase
+      const perLength = Math.max(40, Math.round(swimBase / (swimId === 'swim450m' ? 9 : 10)))
+      const mainDuration = Math.min(35, Math.round(20 + (plan.week - 1) * 2))
+      addStep('Warm-up easy swim', 5 * 60, 'warmup', { isSwim: true, intensity: 'easy' })
+      addStep('Technique drills (4x50 form focus)', 4 * perLength, 'work', { isSwim: true, intensity: 'moderate' })
+      addStep(`Sustained swim set (${mainDuration} min)`, mainDuration * 60, 'work', { isSwim: true, intensity: 'moderate' })
+      addStep('Cool-down easy swim', 5 * 60, 'cooldown', { isSwim: true, intensity: 'easy' })
+      return steps
+    }
     const duration = Math.min(45, Math.round(30 + (plan.week - 1) * 2))
     if (has('row2k')) {
       addStep('Steady tempo row', duration * 60, 'work', {
@@ -581,7 +618,6 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
       })
     }
     if (has('run15')) addStep('Steady run', Math.max(20, duration - 5) * 60, 'work', { intensity: 'moderate' })
-    if (has('swim450m') || has('swim500y')) addStep('Steady swim', Math.max(20, duration - 10) * 60, 'work', { intensity: 'moderate', isSwim: true })
     addStep('Cooldown easy cardio', 6 * 60, 'cooldown', { pace: easySplit, intensity: 'easy' })
     return steps
   }
@@ -623,12 +659,6 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
         if (i < 10) addStep('Easy jog rest', 60, 'rest')
       }
     }
-    if (has('swim450m') || has('swim500y')) {
-      for (let i = 1; i <= 10; i += 1) {
-        addStep(`Swim speed rep ${i}/10`, 50, 'work', { intensity: 'hard', isSwim: true })
-        if (i < 10) addStep('Swim rest', 40, 'rest')
-      }
-    }
     if (has('plank')) {
       const hold = Math.max(25, Math.round(currentPlankCapacity * (0.7 + weekBoost * 0.5)))
       for (let i = 1; i <= 3; i += 1) {
@@ -640,6 +670,13 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
   }
 
   if (plan.dayName === 'Saturday') {
+    if (has('swim450m') || has('swim500y')) {
+      const duration = Math.min(45, Math.round(25 + (plan.week - 1) * 3))
+      addStep('Warm-up easy swim', 5 * 60, 'warmup', { isSwim: true, intensity: 'easy' })
+      addStep(`Long endurance swim (${duration} min)`, duration * 60, 'work', { isSwim: true, intensity: 'easy' })
+      addStep('Cool-down and breathing work', 5 * 60, 'cooldown', { isSwim: true, intensity: 'easy' })
+      return steps
+    }
     const duration = Math.min(75, Math.round(45 + (plan.week - 1) * 4))
     if (has('row2k')) {
       addStep('Long easy row', duration * 60, 'work', {
@@ -648,18 +685,18 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
       })
     }
     if (has('run15')) addStep('Long easy run', Math.max(25, duration - 15) * 60, 'work', { intensity: 'easy' })
-    if (has('swim450m') || has('swim500y')) addStep('Long easy swim', Math.max(20, duration - 25) * 60, 'work', { intensity: 'easy', isSwim: true })
     addStep('Cooldown breathing and mobility', 8 * 60, 'cooldown', { pace: easySplit, intensity: 'easy' })
     return steps
   }
 
-  addStep('Active recovery (walk, swim, mobility)', 30 * 60, 'work')
+  addStep('Active recovery (walk, mobility)', 30 * 60, 'work')
   return steps
 }
 
 function buildProgram(config) {
   const totalDays = clamp(config?.programDays || DEFAULT_PROGRAM_DAYS, MIN_PROGRAM_DAYS, MAX_PROGRAM_DAYS)
   const selectedWorkouts = getSelectedWorkoutIds(config?.selectedWorkouts)
+  const hasSwim = selectedWorkouts.includes('swim450m') || selectedWorkouts.includes('swim500y')
 
   const baselineWorkouts = ['Warm up 10-15 min with easy cardio + dynamic mobility']
   if (selectedWorkouts.includes('row2k')) baselineWorkouts.push('Row: 2,000m all-out (record time + avg split)')
@@ -669,6 +706,24 @@ function buildProgram(config) {
   if (selectedWorkouts.includes('pushups')) baselineWorkouts.push('Push-ups: max continuous strict reps')
   if (selectedWorkouts.includes('plank')) baselineWorkouts.push('Plank: forearm hold to technical failure')
   baselineWorkouts.push('Set SMART targets for retest day')
+
+  const taperDayOneWorkouts = hasSwim
+    ? ['Swim-only taper: 10-15 min easy swim', 'Optional: 2x50 relaxed technical pickups']
+    : [
+      'Cardio: 20-25 min easy',
+      'Primer: 3x1 min moderate with full easy recovery',
+      'Strength/core: 2-3 light submax sets'
+    ]
+
+  const finalRetestWorkouts = [
+    'Repeat baseline protocol exactly',
+    ...(selectedWorkouts.includes('row2k') ? ['Row: 2,000m all-out (compare time and split)'] : []),
+    ...(selectedWorkouts.includes('run15') ? ['Run: 1.5 mile all-out (compare total time)'] : []),
+    ...(selectedWorkouts.includes('swim450m') ? ['Swim: 450m all-out (compare time and splits)'] : []),
+    ...(selectedWorkouts.includes('swim500y') ? ['Swim: 500 yard all-out (compare time and splits)'] : []),
+    ...(selectedWorkouts.includes('pushups') ? ['Push-ups: max strict reps'] : []),
+    ...(selectedWorkouts.includes('plank') ? ['Plank: forearm hold to technical failure'] : [])
+  ]
 
   const plan = [
     {
@@ -711,7 +766,9 @@ function buildProgram(config) {
       phase,
       week,
       dayName,
-      title: template.title,
+      title: hasSwim && dayName === 'Wednesday' ? 'Swim: Technique Day'
+        : hasSwim && dayName === 'Saturday' ? 'Swim: Endurance Day'
+        : template.title,
       workouts: templateWorkouts,
       notes
     })
@@ -724,11 +781,7 @@ function buildProgram(config) {
       week: Math.ceil(taperStart / 7),
       dayName: 'Taper',
       title: 'Taper Day 1',
-      workouts: [
-        'Cardio: 20-25 min easy',
-        'Primer: 3x1 min moderate with full easy recovery',
-        'Strength/core: 2-3 light submax sets'
-      ]
+      workouts: taperDayOneWorkouts
     },
     {
       day: taperStart + 1,
@@ -752,12 +805,7 @@ function buildProgram(config) {
       week: Math.ceil(totalDays / 7),
       dayName: 'Final Test',
       title: 'Final Retest Day',
-      workouts: [
-        'Repeat baseline protocol exactly',
-        'Row: 2,000m all-out (compare time and split)',
-        'Push-ups: max strict reps',
-        'Plank: forearm hold to technical failure'
-      ]
+      workouts: finalRetestWorkouts
     }
   )
 
@@ -1088,7 +1136,10 @@ function App() {
     [selectedPlan, baseline, goalMetrics, programConfig]
   )
   const currentStep = sessionSteps[sessionState.stepIndex]
-  const isSwimDay = sessionSteps.some((s) => s.isSwim)
+  const workOrTestSteps = sessionSteps.filter((s) => s.type === 'work' || s.type === 'test')
+  const isSwimDay = workOrTestSteps.length > 0 && workOrTestSteps.every((s) => s.isSwim)
+  const isTestDay = selectedPlan.day === 0 || selectedPlan.day === programConfig.programDays
+  const isChecklistDay = isSwimDay || isTestDay
   const activeWorkoutItems = workoutCatalog.filter((item) => workoutEnabled(programConfig.selectedWorkouts, item.id))
   const activeWorkoutLabels = activeWorkoutItems.map((item) => item.label)
   const baselineCoverageByWorkout = {
@@ -1253,7 +1304,7 @@ function App() {
   }, [sessionState.status, selectedDay])
 
   useEffect(() => {
-    if (sessionSteps.length === 0 || !sessionSteps.some((s) => s.isSwim)) {
+    if (sessionSteps.length === 0 || !isChecklistDay) {
       return
     }
 
@@ -1263,7 +1314,7 @@ function App() {
         [selectedDay]: { ...current[selectedDay], complete: true }
       }))
     }
-  }, [swimChecks, sessionSteps, selectedDay])
+  }, [swimChecks, sessionSteps, selectedDay, isChecklistDay])
 
   return (
     <div className="app-shell">
@@ -1497,15 +1548,15 @@ function App() {
               </p>
             </div>
 
-            {isSwimDay ? (
+            {isChecklistDay ? (
               <div className="card checklist-card">
-                <h3>Swim Session Checklist</h3>
+                <h3>{isSwimDay ? 'Swim Session Checklist' : 'Test Day Checklist'}</h3>
                 {sessionSteps.length > 0 && sessionSteps.every((_, i) => Boolean(swimChecks[i])) && (
                   <p className="timer-complete">Session complete. Day marked as done.</p>
                 )}
                 <ul className="swim-checklist">
                   {sessionSteps.map((step, index) => (
-                    <li key={index} className={`checklist-item${swimChecks[index] ? ' checked' : ''} type-${step.type}`}>
+                    <li key={index} className={`checklist-item${swimChecks[index] ? ' checked' : ''} type-${step.type}${step.isSwim ? ' is-swim' : ''}`}>
                       <label>
                         <input
                           type="checkbox"
