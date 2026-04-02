@@ -26,6 +26,15 @@ const workoutLogInputs = {
   swim500y: { label: '500 yard swim result', placeholder: 'e.g. 10:05' }
 }
 
+const workoutGoalInputs = {
+  row2k: { field: 'row2kGoal', label: 'Row 2k goal time', placeholder: 'e.g. 7:00' },
+  pushups: { field: 'pushupGoal', label: 'Push-up goal (in 1 minute)', placeholder: 'e.g. 60' },
+  plank: { field: 'plankGoal', label: 'Plank goal time', placeholder: 'e.g. 3:20' },
+  run15: { field: 'run15Goal', label: '1.5 mile run goal time', placeholder: 'e.g. 11:20' },
+  swim450m: { field: 'swim450mGoal', label: '450m swim goal time', placeholder: 'e.g. 8:45' },
+  swim500y: { field: 'swim500yGoal', label: '500 yard swim goal time', placeholder: 'e.g. 9:25' }
+}
+
 const defaultWorkoutSelection = {
   row2k: true,
   pushups: true,
@@ -217,18 +226,32 @@ function getBaseline(logs) {
   const row2kSeconds = parseTimeToSeconds(baseline.row)
   const pushupMax = parseFirstNumber(baseline.pushups)
   const plankMaxSeconds = parseTimeToSeconds(baseline.plank) ?? parseFirstNumber(baseline.plank)
+  const run15Seconds = parseTimeToSeconds(baseline.run15)
+  const swim450mSeconds = parseTimeToSeconds(baseline.swim450m)
+  const swim500ySeconds = parseTimeToSeconds(baseline.swim500y)
 
   const fallback = {
     row2kSeconds: 540,
     pushupMax: 20,
-    plankMaxSeconds: 60
+    plankMaxSeconds: 60,
+    run15Seconds: 13 * 60,
+    swim450mSeconds: 10 * 60,
+    swim500ySeconds: 10 * 60
   }
 
   return {
     row2kSeconds: row2kSeconds || fallback.row2kSeconds,
     pushupMax: pushupMax || fallback.pushupMax,
     plankMaxSeconds: plankMaxSeconds || fallback.plankMaxSeconds,
-    hasCompleteBaseline: Boolean(row2kSeconds && pushupMax && plankMaxSeconds)
+    run15Seconds: run15Seconds || fallback.run15Seconds,
+    swim450mSeconds: swim450mSeconds || fallback.swim450mSeconds,
+    swim500ySeconds: swim500ySeconds || fallback.swim500ySeconds,
+    hasRow2kBaseline: Boolean(row2kSeconds),
+    hasPushupBaseline: Boolean(pushupMax),
+    hasPlankBaseline: Boolean(plankMaxSeconds),
+    hasRun15Baseline: Boolean(run15Seconds),
+    hasSwim450mBaseline: Boolean(swim450mSeconds),
+    hasSwim500yBaseline: Boolean(swim500ySeconds)
   }
 }
 
@@ -236,15 +259,21 @@ function getGoals(goalInputs, baseline) {
   const row2kGoalSeconds = parseTimeToSeconds(goalInputs.row2kGoal)
   const pushupGoal = parseFirstNumber(goalInputs.pushupGoal)
   const plankGoalSeconds = parseTimeToSeconds(goalInputs.plankGoal)
+  const run15GoalSeconds = parseTimeToSeconds(goalInputs.run15Goal)
+  const swim450mGoalSeconds = parseTimeToSeconds(goalInputs.swim450mGoal)
+  const swim500yGoalSeconds = parseTimeToSeconds(goalInputs.swim500yGoal)
 
   return {
     row2kGoalSeconds: row2kGoalSeconds || Math.round(baseline.row2kSeconds * 0.93),
     pushupGoal: pushupGoal || Math.round(baseline.pushupMax + 20),
-    plankGoalSeconds: plankGoalSeconds || Math.round(baseline.plankMaxSeconds + 45)
+    plankGoalSeconds: plankGoalSeconds || Math.round(baseline.plankMaxSeconds + 45),
+    run15GoalSeconds: run15GoalSeconds || Math.round(baseline.run15Seconds * 0.94),
+    swim450mGoalSeconds: swim450mGoalSeconds || Math.round(baseline.swim450mSeconds * 0.94),
+    swim500yGoalSeconds: swim500yGoalSeconds || Math.round(baseline.swim500ySeconds * 0.94)
   }
 }
 
-function getDailyPrescription(plan, baseline, goals, logs, config) {
+function getDailyPrescription(plan, baseline, goals, config) {
   const totalDays = clamp(config?.programDays || DEFAULT_PROGRAM_DAYS, MIN_PROGRAM_DAYS, MAX_PROGRAM_DAYS)
   const selectedWorkouts = getSelectedWorkoutIds(config?.selectedWorkouts)
   const has = (id) => selectedWorkouts.includes(id)
@@ -252,9 +281,6 @@ function getDailyPrescription(plan, baseline, goals, logs, config) {
   const current2kCapacity = baseline.row2kSeconds + (goals.row2kGoalSeconds - baseline.row2kSeconds) * cycleProgress
   const currentPushCapacity = baseline.pushupMax + (goals.pushupGoal - baseline.pushupMax) * cycleProgress
   const currentPlankCapacity = baseline.plankMaxSeconds + (goals.plankGoalSeconds - baseline.plankMaxSeconds) * cycleProgress
-  const runBase = getCardioBaselineSeconds(logs, 'run15', 13 * 60)
-  const swim450Base = getCardioBaselineSeconds(logs, 'swim450m', 10 * 60)
-  const swim500yBase = getCardioBaselineSeconds(logs, 'swim500y', 10 * 60)
 
   if (plan.day === 0) {
     const intro = ['Warm-up: 10-15 min cardio + dynamic mobility']
@@ -271,9 +297,9 @@ function getDailyPrescription(plan, baseline, goals, logs, config) {
   if (plan.day === totalDays) {
     const retest = ['Retest protocol: same warm-up and order as Day 0']
     if (has('row2k')) retest.push(`Row goal: ${formatSeconds(goals.row2kGoalSeconds)} for 2k`)
-    if (has('run15')) retest.push(`1.5 mile run goal: ${formatSeconds(runBase * 0.94)} or faster`)
-    if (has('swim450m')) retest.push(`450m swim goal: ${formatSeconds(swim450Base * 0.94)} or faster`)
-    if (has('swim500y')) retest.push(`500 yard swim goal: ${formatSeconds(swim500yBase * 0.94)} or faster`)
+    if (has('run15')) retest.push(`1.5 mile run goal: ${formatSeconds(goals.run15GoalSeconds)} or faster`)
+    if (has('swim450m')) retest.push(`450m swim goal: ${formatSeconds(goals.swim450mGoalSeconds)} or faster`)
+    if (has('swim500y')) retest.push(`500 yard swim goal: ${formatSeconds(goals.swim500yGoalSeconds)} or faster`)
     if (has('pushups')) retest.push(`Push-up goal: ${Math.round(goals.pushupGoal)} strict reps in 1 minute`)
     if (has('plank')) retest.push(`Plank goal: ${formatSeconds(goals.plankGoalSeconds)} hold`)
     return retest
@@ -448,15 +474,15 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
       addStep('Recovery walk and breathing reset', 3 * 60, 'rest')
     }
     if (has('run15')) {
-      addStep(`1.5 mile run retest (goal ${formatSeconds(runBase * 0.94)})`, Math.round(runBase * 0.94), 'test', { intensity: 'hard' })
+      addStep(`1.5 mile run retest (goal ${formatSeconds(goals.run15GoalSeconds)})`, Math.round(goals.run15GoalSeconds), 'test', { intensity: 'hard' })
       addStep('Recovery walk', 3 * 60, 'rest')
     }
     if (has('swim450m')) {
-      addStep(`450m swim retest (goal ${formatSeconds(swim450Base * 0.94)})`, Math.round(swim450Base * 0.94), 'test', { intensity: 'hard' })
+      addStep(`450m swim retest (goal ${formatSeconds(goals.swim450mGoalSeconds)})`, Math.round(goals.swim450mGoalSeconds), 'test', { intensity: 'hard' })
       addStep('Pool deck recovery', 2 * 60, 'rest')
     }
     if (has('swim500y')) {
-      addStep(`500 yard swim retest (goal ${formatSeconds(swim500yBase * 0.94)})`, Math.round(swim500yBase * 0.94), 'test', { intensity: 'hard' })
+      addStep(`500 yard swim retest (goal ${formatSeconds(goals.swim500yGoalSeconds)})`, Math.round(goals.swim500yGoalSeconds), 'test', { intensity: 'hard' })
       addStep('Pool deck recovery', 2 * 60, 'rest')
     }
     if (has('pushups')) {
@@ -779,7 +805,10 @@ function App() {
     return {
       row2kGoal: '7:00',
       pushupGoal: '60',
-      plankGoal: '3:20'
+      plankGoal: '3:20',
+      run15Goal: '11:20',
+      swim450mGoal: '8:45',
+      swim500yGoal: '9:25'
     }
   })
   const [firebaseApi, setFirebaseApi] = useState(null)
@@ -1051,13 +1080,23 @@ function App() {
     stepIndex: 0,
     remaining: 0
   })
+  const [programDaysInput, setProgramDaysInput] = useState(() => String(programConfig.programDays))
   const dayTargets = useMemo(
-    () => getDailyPrescription(selectedPlan, baseline, goalMetrics, logs, programConfig),
-    [selectedPlan, baseline, goalMetrics, logs, programConfig]
+    () => getDailyPrescription(selectedPlan, baseline, goalMetrics, programConfig),
+    [selectedPlan, baseline, goalMetrics, programConfig]
   )
   const currentStep = sessionSteps[sessionState.stepIndex]
   const activeWorkoutItems = workoutCatalog.filter((item) => workoutEnabled(programConfig.selectedWorkouts, item.id))
   const activeWorkoutLabels = activeWorkoutItems.map((item) => item.label)
+  const baselineCoverageByWorkout = {
+    row2k: baseline.hasRow2kBaseline,
+    pushups: baseline.hasPushupBaseline,
+    plank: baseline.hasPlankBaseline,
+    run15: baseline.hasRun15Baseline,
+    swim450m: baseline.hasSwim450mBaseline,
+    swim500y: baseline.hasSwim500yBaseline
+  }
+  const hasCompleteSelectedBaseline = activeWorkoutItems.every((item) => baselineCoverageByWorkout[item.id])
 
   const updateLog = (field, value) => {
     setLogs((current) => ({
@@ -1076,11 +1115,20 @@ function App() {
     }))
   }
 
-  const updateProgramDays = (value) => {
+  const updateProgramDays = (rawValue) => {
+    const parsed = Number.parseInt(String(rawValue), 10)
+
+    if (Number.isNaN(parsed)) {
+      setProgramDaysInput(String(programConfig.programDays))
+      return
+    }
+
+    const normalizedDays = clamp(parsed, MIN_PROGRAM_DAYS, MAX_PROGRAM_DAYS)
     setProgramConfig((current) => normalizeProgramConfig({
       ...current,
-      programDays: clamp(Number(value) || DEFAULT_PROGRAM_DAYS, MIN_PROGRAM_DAYS, MAX_PROGRAM_DAYS)
+      programDays: normalizedDays
     }))
+    setProgramDaysInput(String(normalizedDays))
   }
 
   const toggleWorkoutSelection = (workoutId, enabled) => {
@@ -1138,6 +1186,10 @@ function App() {
   useEffect(() => {
     setSessionState({ status: 'idle', stepIndex: 0, remaining: 0 })
   }, [selectedDay])
+
+  useEffect(() => {
+    setProgramDaysInput(String(programConfig.programDays))
+  }, [programConfig.programDays])
 
   useEffect(() => {
     if (sessionState.status !== 'running') {
@@ -1261,7 +1313,7 @@ function App() {
 
               <div className="target-box">
                 <h3>Today's Targets</h3>
-                {!baseline.hasCompleteBaseline && selectedPlan.day > 0 && (
+                {!hasCompleteSelectedBaseline && selectedPlan.day > 0 && (
                   <p className="baseline-note">
                     Add Day 0 baseline values to personalize targets. Showing starter defaults until then.
                   </p>
@@ -1347,8 +1399,15 @@ function App() {
                     min={MIN_PROGRAM_DAYS}
                     max={MAX_PROGRAM_DAYS}
                     step="1"
-                    value={programConfig.programDays}
-                    onChange={(event) => updateProgramDays(event.target.value)}
+                    value={programDaysInput}
+                    onChange={(event) => setProgramDaysInput(event.target.value)}
+                    onBlur={(event) => updateProgramDays(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        updateProgramDays(event.currentTarget.value)
+                        event.currentTarget.blur()
+                      }
+                    }}
                     placeholder="e.g. 60"
                   />
                 </label>
@@ -1373,36 +1432,19 @@ function App() {
             <div className="card tracker">
               <h3>Target Goals (Day {programConfig.programDays})</h3>
               <div className="field-grid">
-                {workoutEnabled(programConfig.selectedWorkouts, 'row2k') && (
-                  <label>
-                    Row 2k goal time
-                    <input
-                      value={goals.row2kGoal}
-                      onChange={(event) => updateGoal('row2kGoal', event.target.value)}
-                      placeholder="e.g. 7:00"
-                    />
-                  </label>
-                )}
-                {workoutEnabled(programConfig.selectedWorkouts, 'pushups') && (
-                  <label>
-                    Push-up goal (in 1 minute)
-                    <input
-                      value={goals.pushupGoal}
-                      onChange={(event) => updateGoal('pushupGoal', event.target.value)}
-                      placeholder="e.g. 60"
-                    />
-                  </label>
-                )}
-                {workoutEnabled(programConfig.selectedWorkouts, 'plank') && (
-                  <label>
-                    Plank goal time
-                    <input
-                      value={goals.plankGoal}
-                      onChange={(event) => updateGoal('plankGoal', event.target.value)}
-                      placeholder="e.g. 3:20"
-                    />
-                  </label>
-                )}
+                {activeWorkoutItems.map((item) => {
+                  const goalInput = workoutGoalInputs[item.id]
+                  return (
+                    <label key={item.id}>
+                      {goalInput.label}
+                      <input
+                        value={goals[goalInput.field] || ''}
+                        onChange={(event) => updateGoal(goalInput.field, event.target.value)}
+                        placeholder={goalInput.placeholder}
+                      />
+                    </label>
+                  )
+                })}
               </div>
             </div>
 
