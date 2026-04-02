@@ -416,7 +416,8 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
       seconds: safeSeconds,
       type,
       pace: options.pace || '',
-      intensity: options.intensity || fallbackIntensity
+      intensity: options.intensity || fallbackIntensity,
+      isSwim: Boolean(options.isSwim)
     })
   }
 
@@ -449,11 +450,11 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
       addStep('Recovery walk', 3 * 60, 'rest')
     }
     if (has('swim450m')) {
-      addStep('450m swim time trial', Math.round(swim450Base), 'test', { intensity: 'hard' })
+      addStep('450m swim time trial', Math.round(swim450Base), 'test', { intensity: 'hard', isSwim: true })
       addStep('Pool deck recovery', 2 * 60, 'rest')
     }
     if (has('swim500y')) {
-      addStep('500 yard swim time trial', Math.round(swim500yBase), 'test', { intensity: 'hard' })
+      addStep('500 yard swim time trial', Math.round(swim500yBase), 'test', { intensity: 'hard', isSwim: true })
       addStep('Pool deck recovery', 2 * 60, 'rest')
     }
     if (has('pushups')) {
@@ -478,11 +479,11 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
       addStep('Recovery walk', 3 * 60, 'rest')
     }
     if (has('swim450m')) {
-      addStep(`450m swim retest (goal ${formatSeconds(goals.swim450mGoalSeconds)})`, Math.round(goals.swim450mGoalSeconds), 'test', { intensity: 'hard' })
+      addStep(`450m swim retest (goal ${formatSeconds(goals.swim450mGoalSeconds)})`, Math.round(goals.swim450mGoalSeconds), 'test', { intensity: 'hard', isSwim: true })
       addStep('Pool deck recovery', 2 * 60, 'rest')
     }
     if (has('swim500y')) {
-      addStep(`500 yard swim retest (goal ${formatSeconds(goals.swim500yGoalSeconds)})`, Math.round(goals.swim500yGoalSeconds), 'test', { intensity: 'hard' })
+      addStep(`500 yard swim retest (goal ${formatSeconds(goals.swim500yGoalSeconds)})`, Math.round(goals.swim500yGoalSeconds), 'test', { intensity: 'hard', isSwim: true })
       addStep('Pool deck recovery', 2 * 60, 'rest')
     }
     if (has('pushups')) {
@@ -542,7 +543,7 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
     }
     if (has('swim450m') || has('swim500y')) {
       for (let i = 1; i <= 8; i += 1) {
-        addStep(`Swim rep ${i}/8 moderate-hard`, 50, 'work', { intensity: 'hard' })
+        addStep(`Swim rep ${i}/8 moderate-hard`, 50, 'work', { intensity: 'hard', isSwim: true })
         if (i < 8) addStep('Swim rest', 40, 'rest')
       }
     }
@@ -580,7 +581,7 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
       })
     }
     if (has('run15')) addStep('Steady run', Math.max(20, duration - 5) * 60, 'work', { intensity: 'moderate' })
-    if (has('swim450m') || has('swim500y')) addStep('Steady swim', Math.max(20, duration - 10) * 60, 'work', { intensity: 'moderate' })
+    if (has('swim450m') || has('swim500y')) addStep('Steady swim', Math.max(20, duration - 10) * 60, 'work', { intensity: 'moderate', isSwim: true })
     addStep('Cooldown easy cardio', 6 * 60, 'cooldown', { pace: easySplit, intensity: 'easy' })
     return steps
   }
@@ -624,7 +625,7 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
     }
     if (has('swim450m') || has('swim500y')) {
       for (let i = 1; i <= 10; i += 1) {
-        addStep(`Swim speed rep ${i}/10`, 50, 'work', { intensity: 'hard' })
+        addStep(`Swim speed rep ${i}/10`, 50, 'work', { intensity: 'hard', isSwim: true })
         if (i < 10) addStep('Swim rest', 40, 'rest')
       }
     }
@@ -647,7 +648,7 @@ function getSessionSteps(plan, baseline, goals, logs, config) {
       })
     }
     if (has('run15')) addStep('Long easy run', Math.max(25, duration - 15) * 60, 'work', { intensity: 'easy' })
-    if (has('swim450m') || has('swim500y')) addStep('Long easy swim', Math.max(20, duration - 25) * 60, 'work', { intensity: 'easy' })
+    if (has('swim450m') || has('swim500y')) addStep('Long easy swim', Math.max(20, duration - 25) * 60, 'work', { intensity: 'easy', isSwim: true })
     addStep('Cooldown breathing and mobility', 8 * 60, 'cooldown', { pace: easySplit, intensity: 'easy' })
     return steps
   }
@@ -1080,12 +1081,14 @@ function App() {
     stepIndex: 0,
     remaining: 0
   })
+  const [swimChecks, setSwimChecks] = useState([])
   const [programDaysInput, setProgramDaysInput] = useState(() => String(programConfig.programDays))
   const dayTargets = useMemo(
     () => getDailyPrescription(selectedPlan, baseline, goalMetrics, programConfig),
     [selectedPlan, baseline, goalMetrics, programConfig]
   )
   const currentStep = sessionSteps[sessionState.stepIndex]
+  const isSwimDay = sessionSteps.some((s) => s.isSwim)
   const activeWorkoutItems = workoutCatalog.filter((item) => workoutEnabled(programConfig.selectedWorkouts, item.id))
   const activeWorkoutLabels = activeWorkoutItems.map((item) => item.label)
   const baselineCoverageByWorkout = {
@@ -1168,6 +1171,14 @@ function App() {
     setSessionState({ status: 'idle', stepIndex: 0, remaining: 0 })
   }
 
+  const toggleSwimCheck = (index) => {
+    setSwimChecks((current) => {
+      const updated = Array.from({ length: sessionSteps.length }, (_, i) => Boolean(current[i]))
+      updated[index] = !updated[index]
+      return updated
+    })
+  }
+
   const skipStep = () => {
     setSessionState((current) => {
       const nextStep = current.stepIndex + 1
@@ -1185,6 +1196,7 @@ function App() {
 
   useEffect(() => {
     setSessionState({ status: 'idle', stepIndex: 0, remaining: 0 })
+    setSwimChecks([])
   }, [selectedDay])
 
   useEffect(() => {
@@ -1239,6 +1251,19 @@ function App() {
       }
     }))
   }, [sessionState.status, selectedDay])
+
+  useEffect(() => {
+    if (sessionSteps.length === 0 || !sessionSteps.some((s) => s.isSwim)) {
+      return
+    }
+
+    if (swimChecks.length > 0 && sessionSteps.every((_, i) => Boolean(swimChecks[i]))) {
+      setLogs((current) => ({
+        ...current,
+        [selectedDay]: { ...current[selectedDay], complete: true }
+      }))
+    }
+  }, [swimChecks, sessionSteps, selectedDay])
 
   return (
     <div className="app-shell">
@@ -1472,41 +1497,70 @@ function App() {
               </p>
             </div>
 
-            <div className="card timer-card">
-              <h3>Workout Timer</h3>
-              <p className="timer-status">Status: {sessionState.status}</p>
-              {sessionState.status === 'complete' && (
-                <p className="timer-complete">Workout complete. Day marked as complete.</p>
-              )}
-              <div className={`timer-panel ${currentStep ? `intensity-${currentStep.intensity}` : ''}`}>
-                <p className="timer-step">{currentStep ? currentStep.label : 'No session steps for today'}</p>
-                {currentStep?.intensity && (
-                  <p className={`timer-intensity intensity-pill intensity-${currentStep.intensity}`}>
-                    Intensity: {currentStep.intensity}
-                  </p>
+            {isSwimDay ? (
+              <div className="card checklist-card">
+                <h3>Swim Session Checklist</h3>
+                {sessionSteps.length > 0 && sessionSteps.every((_, i) => Boolean(swimChecks[i])) && (
+                  <p className="timer-complete">Session complete. Day marked as done.</p>
                 )}
-                {currentStep?.pace && <p className="timer-pace">Row pace target: {currentStep.pace}</p>}
-                <p className="timer-countdown">{formatSeconds(sessionState.remaining)}</p>
+                <ul className="swim-checklist">
+                  {sessionSteps.map((step, index) => (
+                    <li key={index} className={`checklist-item${swimChecks[index] ? ' checked' : ''} type-${step.type}`}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(swimChecks[index])}
+                          onChange={() => toggleSwimCheck(index)}
+                        />
+                        <span className="checklist-label">{step.label}</span>
+                        <span className="checklist-time">
+                          {step.isSwim ? `Target: ${formatSeconds(step.seconds)}` : formatSeconds(step.seconds)}
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
                 <p className="timer-progress">
-                  Step {Math.min(sessionState.stepIndex + 1, sessionSteps.length)} of {sessionSteps.length}
+                  {swimChecks.filter(Boolean).length} of {sessionSteps.length} steps done
                 </p>
               </div>
-              <div className="timer-actions">
-                <button type="button" onClick={startOrPauseWorkout} className="action-button">
-                  {sessionState.status === 'running'
-                    ? 'Pause Workout'
-                    : sessionState.status === 'paused'
-                      ? 'Resume Workout'
-                      : 'Start Workout'}
-                </button>
-                <button type="button" onClick={skipStep} className="ghost-button" disabled={sessionState.status === 'idle'}>
-                  Skip Step
-                </button>
-                <button type="button" onClick={resetWorkout} className="ghost-button">
-                  Reset
-                </button>
+            ) : (
+              <div className="card timer-card">
+                <h3>Workout Timer</h3>
+                <p className="timer-status">Status: {sessionState.status}</p>
+                {sessionState.status === 'complete' && (
+                  <p className="timer-complete">Workout complete. Day marked as complete.</p>
+                )}
+                <div className={`timer-panel ${currentStep ? `intensity-${currentStep.intensity}` : ''}`}>
+                  <p className="timer-step">{currentStep ? currentStep.label : 'No session steps for today'}</p>
+                  {currentStep?.intensity && (
+                    <p className={`timer-intensity intensity-pill intensity-${currentStep.intensity}`}>
+                      Intensity: {currentStep.intensity}
+                    </p>
+                  )}
+                  {currentStep?.pace && <p className="timer-pace">Row pace target: {currentStep.pace}</p>}
+                  <p className="timer-countdown">{formatSeconds(sessionState.remaining)}</p>
+                  <p className="timer-progress">
+                    Step {Math.min(sessionState.stepIndex + 1, sessionSteps.length)} of {sessionSteps.length}
+                  </p>
+                </div>
+                <div className="timer-actions">
+                  <button type="button" onClick={startOrPauseWorkout} className="action-button">
+                    {sessionState.status === 'running'
+                      ? 'Pause Workout'
+                      : sessionState.status === 'paused'
+                        ? 'Resume Workout'
+                        : 'Start Workout'}
+                  </button>
+                  <button type="button" onClick={skipStep} className="ghost-button" disabled={sessionState.status === 'idle'}>
+                    Skip Step
+                  </button>
+                  <button type="button" onClick={resetWorkout} className="ghost-button">
+                    Reset
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </main>
