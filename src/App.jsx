@@ -991,6 +991,21 @@ function formatSplit(totalSeconds) {
   return `${formatSeconds(totalSeconds)}/500m`
 }
 
+function formatStopwatch(elapsedMs) {
+  const safeMs = Math.max(0, Number(elapsedMs) || 0)
+  const totalSeconds = Math.floor(safeMs / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  const centiseconds = Math.floor((safeMs % 1000) / 10)
+
+  if (hours > 0) {
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`
+  }
+
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`
+}
+
 function getCardioBaselineSeconds(logs, field, fallbackSeconds) {
   const baseline = logs[0] || {}
   const parsed = parseTimeToSeconds(baseline[field])
@@ -1871,6 +1886,13 @@ function App() {
     stepIndex: 0,
     remaining: 0
   })
+  const [stopwatchState, setStopwatchState] = useState({
+    mode: 'run',
+    status: 'idle',
+    elapsedMs: 0,
+    startedAt: 0,
+    laps: []
+  })
   const [swimChecks, setSwimChecks] = useState([])
   const [programDaysInput, setProgramDaysInput] = useState(() => String(programConfig.programDays))
   const pstBaselinePushups = parseFirstNumber(pstInputs.pushups || logs[0]?.pushups || '')
@@ -2024,6 +2046,63 @@ function App() {
     setShowExerciseModal(true)
   }
 
+  const setStopwatchMode = (mode) => {
+    setStopwatchState((current) => ({
+      ...current,
+      mode,
+      status: 'idle',
+      elapsedMs: 0,
+      startedAt: 0,
+      laps: []
+    }))
+  }
+
+  const toggleStopwatch = () => {
+    setStopwatchState((current) => {
+      if (current.status === 'running') {
+        return {
+          ...current,
+          status: 'paused',
+          elapsedMs: current.elapsedMs + (Date.now() - current.startedAt),
+          startedAt: 0
+        }
+      }
+
+      return {
+        ...current,
+        status: 'running',
+        startedAt: Date.now()
+      }
+    })
+  }
+
+  const resetStopwatch = () => {
+    setStopwatchState((current) => ({
+      ...current,
+      status: 'idle',
+      elapsedMs: 0,
+      startedAt: 0,
+      laps: []
+    }))
+  }
+
+  const captureStopwatchLap = () => {
+    setStopwatchState((current) => {
+      const liveElapsed = current.status === 'running'
+        ? current.elapsedMs + (Date.now() - current.startedAt)
+        : current.elapsedMs
+
+      if (liveElapsed <= 0) {
+        return current
+      }
+
+      return {
+        ...current,
+        laps: [...current.laps, liveElapsed]
+      }
+    })
+  }
+
   const startOrPauseWorkout = () => {
     setSessionState((current) => {
       if (current.status === 'running') {
@@ -2072,7 +2151,36 @@ function App() {
   useEffect(() => {
     setSessionState({ status: 'idle', stepIndex: 0, remaining: 0 })
     setSwimChecks([])
+    setStopwatchState((current) => ({
+      ...current,
+      status: 'idle',
+      elapsedMs: 0,
+      startedAt: 0,
+      laps: []
+    }))
   }, [selectedDay])
+
+  useEffect(() => {
+    if (stopwatchState.status !== 'running') {
+      return undefined
+    }
+
+    const stopwatchTick = setInterval(() => {
+      setStopwatchState((current) => {
+        if (current.status !== 'running') {
+          return current
+        }
+
+        return {
+          ...current,
+          elapsedMs: current.elapsedMs,
+          startedAt: current.startedAt
+        }
+      })
+    }, 100)
+
+    return () => clearInterval(stopwatchTick)
+  }, [stopwatchState.status])
 
   useEffect(() => {
     const nextSelection = todaysExercises[0] || allPdfExercises[0] || ''
@@ -2535,6 +2643,45 @@ function App() {
                   Open Guide
                 </button>
               </div>
+            </div>
+
+            <div className="card stopwatch-card">
+              <h3>Run/Swim Stopwatch</h3>
+              <div className="stopwatch-top-row">
+                <label className="exercise-select-label">
+                  Activity
+                  <select
+                    value={stopwatchState.mode}
+                    onChange={(event) => setStopwatchMode(event.target.value)}
+                  >
+                    <option value="run">Run</option>
+                    <option value="swim">Swim</option>
+                  </select>
+                </label>
+                <p className="timer-status">Mode: {stopwatchState.mode}</p>
+              </div>
+              <p className="stopwatch-display">{formatStopwatch(stopwatchState.status === 'running' ? stopwatchState.elapsedMs + (Date.now() - stopwatchState.startedAt) : stopwatchState.elapsedMs)}</p>
+              <div className="timer-actions">
+                <button type="button" className="action-button" onClick={toggleStopwatch}>
+                  {stopwatchState.status === 'running' ? 'Pause Stopwatch' : 'Start Stopwatch'}
+                </button>
+                <button type="button" className="ghost-button" onClick={captureStopwatchLap} disabled={stopwatchState.elapsedMs === 0 && stopwatchState.status !== 'running'}>
+                  Lap
+                </button>
+                <button type="button" className="ghost-button" onClick={resetStopwatch}>
+                  Reset
+                </button>
+              </div>
+              {stopwatchState.laps.length > 0 && (
+                <ul className="stopwatch-laps">
+                  {stopwatchState.laps.map((lap, index) => (
+                    <li key={`lap-${index}`}>
+                      <span>Lap {index + 1}</span>
+                      <strong>{formatStopwatch(lap)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {isChecklistDay ? (
