@@ -134,3 +134,4 @@ Also included:
 - Dedicated `Week Cal` mode that shows a week-by-week NSW calendar from Week 1 to Week 26
 - PST interval pace calculators for run and swim using baseline times
 - Separate profile slots (`Standard` and `NSW`) so both plans can be saved and switched instantly
+- Full day-by-day NSW workouts in the same Day/Calendar flow as the main program, including PDF-based example workouts and progression notes

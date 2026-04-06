@@ -104,6 +104,246 @@ function getNswWeekPlan(weekInput) {
   }
 }
 
+function getNswCoreProgression(weekInput) {
+  const week = clamp(Number(weekInput) || 1, 1, NSW_TOTAL_WEEKS)
+  if (week <= 6) {
+    return [
+      'Bridge: 2 x 20 alternating reps',
+      'Plank: 2 x 30s',
+      'Side plank: 2 x 30s each side',
+      'Bird dog: 2 x 20 alternating reps',
+      'Superman: 2 x 10 reps',
+      'Wipers: 2 x 20 reps'
+    ]
+  }
+  if (week <= 11) {
+    return [
+      'Bridge: 2 x 25 alternating reps',
+      'Plank: 2 x 45s',
+      'Side plank: 2 x 40s each side',
+      'Bird dog: 2 x 25 alternating reps',
+      'Superman: 3 x 8 reps',
+      'Wipers: 2 x 25 reps'
+    ]
+  }
+  if (week <= 16) {
+    return [
+      'Bridge: 3 x 20 alternating reps',
+      'Plank: 3 x 40s',
+      'Side plank: 2 x 45s each side',
+      'Bird dog: 3 x 20 alternating reps',
+      'Superman: 2 x 12 reps',
+      'Wipers: 3 x 20 reps'
+    ]
+  }
+  if (week <= 21) {
+    return [
+      'Bridge: 3 x 25 alternating reps',
+      'Plank: 3 x 50s',
+      'Side plank: 2 x 50s each side',
+      'Bird dog: 3 x 25 alternating reps',
+      'Superman: 3 x 10 reps',
+      'Wipers: 3 x 25 reps'
+    ]
+  }
+  return [
+    'Bridge: 3 x 30 alternating reps',
+    'Plank: 3 x 60s',
+    'Side plank: 2 x 60s each side',
+    'Bird dog: 3 x 30 alternating reps',
+    'Superman: 3 x 12 reps',
+    'Wipers: 3 x 30 reps'
+  ]
+}
+
+function getNswCalisthenicsExamples() {
+  return [
+    'Push-up/sit-up example (if max <40): 5-6 sets of 10-15 reps',
+    'Push-up/sit-up example (if max 60-80): 4-5 sets of 20-25 reps',
+    'Pull-up example (if max 6-9): 4-5 sets of 4-5 reps',
+    'Pull-up example (if max >15): 3-4 sets of 10-12 reps',
+    'Use strict PST technique and include one max set weekly'
+  ]
+}
+
+function getNswPhaseName(week) {
+  if (week <= 6) return 'NSW Foundation'
+  if (week <= 12) return 'NSW Build'
+  if (week <= 18) return 'NSW Intensification'
+  if (week <= 24) return 'NSW Peak'
+  return 'NSW Sharpen'
+}
+
+function getNswDaySession(weekInput, dayName) {
+  const week = clamp(Number(weekInput) || 1, 1, NSW_TOTAL_WEEKS)
+  const weekPlan = getNswWeekPlan(week)
+  const coreProgression = getNswCoreProgression(week)
+  const calExamples = getNswCalisthenicsExamples()
+
+  if (dayName === 'Monday') {
+    return {
+      title: 'Run LSD + Upper/Core',
+      workouts: [
+        `Run LSD: ${weekPlan.runLsdMiles} miles at easy-moderate talk-test pace`,
+        'Warm-up: 5-10 min easy jog, gradually build',
+        'Cool-down: easy jog/walk until breathing normalizes',
+        'Strength (upper): single sets of 8-12 reps per movement, move station-to-station briskly',
+        'Example upper lifts: lat pull-down, shoulder press, incline/bench press, seated row, triceps extension/dips, biceps curls',
+        'Example workout: final mile slightly faster while staying conversational'
+      ],
+      notes: [
+        'PDF guideline: build toward comfortably running 5-6 miles without stopping',
+        'Complete daily flexibility after cardio',
+        ...coreProgression.slice(0, 2)
+      ]
+    }
+  }
+
+  if (dayName === 'Tuesday') {
+    return {
+      title: 'Swim CHI + Lower + Calisthenics',
+      workouts: [
+        `Swim CHI: ${weekPlan.swimChi}`,
+        'Intensity should feel 8-9 out of 10, demanding but controlled',
+        'When doing 2+ reps, recover actively for about half the work time',
+        'Lower-body strength: lunges, leg curl, deadlift, squat/leg press, heel raises (single-set focus)',
+        'Calisthenics block: push-ups, sit-ups, pull-ups with strict form'
+      ],
+      notes: [
+        'Example swim CHI: 2 x 12 min hard with 6 min easy stroke recovery (mid/late cycle)',
+        ...calExamples.slice(0, 3),
+        'Complete daily flexibility after cardio'
+      ]
+    }
+  }
+
+  if (dayName === 'Wednesday') {
+    return {
+      title: 'Run Intervals + Core + Calisthenics',
+      workouts: [
+        `Run intervals: ${weekPlan.runIntReps} x 400m`,
+        'Work pace: about 4s faster than your current 400m base pace from 1.5-mile time',
+        'Recovery between intervals: 2x to 2.5x work interval time, active recovery only',
+        'Warm-up 10-15 min including 4-5 short high-intensity bursts',
+        'Cool-down until heart rate and breathing are near baseline'
+      ],
+      notes: [
+        'Example interval progression: begin at 4 reps and build toward 10 reps',
+        'Advanced variation every 4th/5th week: 16-20 x 220y repeats',
+        ...coreProgression.slice(2, 4),
+        'Complete daily flexibility after cardio'
+      ]
+    }
+  }
+
+  if (dayName === 'Thursday') {
+    return {
+      title: 'Swim LSD + Core + Calisthenics',
+      workouts: [
+        `Swim LSD: ${weekPlan.swimLsdYards} yards continuous`,
+        'Easy-moderate pace using talk-test equivalent effort and smooth breathing rhythm',
+        'Calisthenics block: push-ups, sit-ups, pull-ups with 1-2 min between sets',
+        'Core progression work from bridge/plank/side plank/bird dog/superman/wipers',
+        'Keep technique strict; avoid sloppy reps under fatigue'
+      ],
+      notes: [
+        'PDF guideline: build toward comfortably swimming 1-1.25 miles without stopping',
+        ...calExamples.slice(3),
+        'Complete daily flexibility after cardio'
+      ]
+    }
+  }
+
+  if (dayName === 'Friday') {
+    return {
+      title: 'Run CHI + Upper/Core',
+      workouts: [
+        `Run CHI: ${weekPlan.runChi}`,
+        'Intensity should feel 8-9 out of 10 with controlled form',
+        'If split into repeats, use active recovery at about half work duration',
+        'Upper-body strength session with push/pull balance',
+        'Keep transitions quick to maintain total session intensity'
+      ],
+      notes: [
+        'Example run CHI: 15-20 min continuous hard effort early cycle',
+        ...coreProgression.slice(4, 6),
+        'Complete daily flexibility after cardio'
+      ]
+    }
+  }
+
+  if (dayName === 'Saturday') {
+    return {
+      title: 'Swim Intervals + Lower + Calisthenics',
+      workouts: [
+        `Swim intervals: ${weekPlan.swimIntReps} x 100y`,
+        'Work pace: about 2s faster than your current 100y base pace from 500y time',
+        'Recovery between reps: 2x to 2.5x work interval time, keep moving easy',
+        'Lower-body strength split and strict calisthenics follow-up',
+        'Do not exceed 10 intervals in the standard progression'
+      ],
+      notes: [
+        'Example advanced variation: 16-20 x 50y intervals every 4th/5th week',
+        'Track fastest and slowest interval and minimize pacing drift',
+        'Complete daily flexibility after cardio'
+      ]
+    }
+  }
+
+  return {
+    title: 'Recovery + Flexibility',
+    workouts: [
+      'Active recovery only: easy walk, mobility, and tissue care',
+      'Daily flexibility emphasis and movement quality work',
+      'No high-intensity training'
+    ],
+    notes: [
+      'Recovery quality drives adaptation for next week',
+      'Hydration, sleep, and nutrition check-in'
+    ]
+  }
+}
+
+function buildNswProgram() {
+  const plan = [
+    {
+      day: 0,
+      phase: 'NSW Prep',
+      week: 0,
+      dayName: 'Prep Day',
+      title: 'NSW Program Setup + PST Baseline',
+      workouts: [
+        'Run baseline: 1.5-mile time trial to set interval pace references',
+        'Swim baseline: 500-yard time trial to set interval pace references',
+        'Baseline calisthenics: strict max push-ups, sit-ups, and pull-ups',
+        'Review weekly structure: Mon run LSD, Tue swim CHI, Wed run INT, Thu swim LSD, Fri run CHI, Sat swim INT, Sun recovery'
+      ],
+      notes: [
+        'Use this baseline to personalize interval pace targets in the NSW tab calculator',
+        'Consult a physician before beginning strenuous training if needed'
+      ]
+    }
+  ]
+
+  for (let day = 1; day <= 182; day += 1) {
+    const week = Math.ceil(day / 7)
+    const dayName = weekDayNames[(day - 1) % 7]
+    const session = getNswDaySession(week, dayName)
+
+    plan.push({
+      day,
+      phase: getNswPhaseName(week),
+      week,
+      dayName,
+      title: session.title,
+      workouts: session.workouts,
+      notes: session.notes
+    })
+  }
+
+  return plan
+}
+
 function getProfileStorageKey(baseKey, profileId) {
   return profileId === DEFAULT_PROFILE ? baseKey : `${baseKey}-${profileId}`
 }
@@ -955,7 +1195,11 @@ function buildProgram(config) {
 function App() {
   const [activeProfile, setActiveProfile] = useState(() => localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE)
   const [programConfig, setProgramConfig] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).config)
-  const program = useMemo(() => buildProgram(programConfig), [programConfig])
+  const nswProgramActive = activeProfile === NSW_PROFILE && programConfig.programDays === 182
+  const program = useMemo(
+    () => (nswProgramActive ? buildNswProgram() : buildProgram(programConfig)),
+    [nswProgramActive, programConfig]
+  )
   const [selectedDay, setSelectedDay] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).selectedDay)
   const [activeTab, setActiveTab] = useState('day')
   const [nswWeek, setNswWeek] = useState(1)
@@ -1245,8 +1489,10 @@ function App() {
   const [swimChecks, setSwimChecks] = useState([])
   const [programDaysInput, setProgramDaysInput] = useState(() => String(programConfig.programDays))
   const dayTargets = useMemo(
-    () => getDailyPrescription(selectedPlan, baseline, goalMetrics, programConfig),
-    [selectedPlan, baseline, goalMetrics, programConfig]
+    () => (nswProgramActive
+      ? selectedPlan.workouts?.slice(0, 4) || []
+      : getDailyPrescription(selectedPlan, baseline, goalMetrics, programConfig)),
+    [selectedPlan, baseline, goalMetrics, programConfig, nswProgramActive]
   )
   const nswWeekPlan = useMemo(() => getNswWeekPlan(nswWeek), [nswWeek])
   const nswCalendarPlan = useMemo(
@@ -1343,7 +1589,7 @@ function App() {
         swim500y: true
       }
     }))
-    setSelectedDay(0)
+    setSelectedDay(1)
     setActiveTab('calendar')
   }
 
