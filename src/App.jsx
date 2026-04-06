@@ -1920,10 +1920,22 @@ function App() {
   const isTestDay = selectedPlan.day === 0 || selectedPlan.day === programConfig.programDays
   const isChecklistDay = nswProgramActive || isSwimDay || isTestDay
   const activeWorkoutItems = workoutCatalog.filter((item) => workoutEnabled(programConfig.selectedWorkouts, item.id))
-  const activeWorkoutLabels = activeWorkoutItems.map((item) => item.label)
+  const heroProgramTitle = nswProgramActive ? 'NSW Training Program' : 'PFT Training Program'
   const allPdfExercises = useMemo(() => Object.keys(exerciseDescriptions), [])
   const todaysExercises = useMemo(() => getExercisesForPlan(selectedPlan), [selectedPlan])
   const selectedExerciseDescription = selectedExercise ? exerciseDescriptions[selectedExercise] : ''
+  const timerExercises = useMemo(() => {
+    const fromPlan = getExercisesForPlan(selectedPlan)
+    const fromSteps = sessionSteps
+      .flatMap((step) => {
+        const text = String(step.label || '').toLowerCase()
+        return exerciseKeywordMap
+          .filter((entry) => entry.patterns.some((pattern) => text.includes(pattern)))
+          .map((entry) => entry.key)
+      })
+
+    return Array.from(new Set([...fromPlan, ...fromSteps]))
+  }, [selectedPlan, sessionSteps])
   const baselineCoverageByWorkout = {
     row2k: baseline.hasRow2kBaseline,
     pushups: baseline.hasPushupBaseline,
@@ -2001,6 +2013,15 @@ function App() {
 
   const switchProfile = (profileId) => {
     setActiveProfile(profileId)
+  }
+
+  const openExerciseGuideFor = (exerciseName) => {
+    if (!exerciseName) {
+      return
+    }
+
+    setSelectedExercise(exerciseName)
+    setShowExerciseModal(true)
   }
 
   const startOrPauseWorkout = () => {
@@ -2144,7 +2165,7 @@ function App() {
     <div className="app-shell">
       <header className="hero-panel">
         <p className="eyebrow">{programConfig.programDays}-Day Performance Builder</p>
-        <h1>{activeWorkoutLabels.join(' + ')}</h1>
+        <h1>{heroProgramTitle}</h1>
         <p className="cloud-status">{cloudStatus}</p>
         {authError && <p className="auth-error">{authError}</p>}
         {firebaseApi?.firebaseConfigured && (
@@ -2291,27 +2312,6 @@ function App() {
                   Show Description
                 </button>
               </div>
-
-              {showExerciseModal && (
-                <div className="exercise-modal-backdrop" role="presentation">
-                  <div className="exercise-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-                    <button
-                      type="button"
-                      className="exercise-modal-close"
-                      aria-label="Close exercise description"
-                      onClick={() => setShowExerciseModal(false)}
-                    >
-                      X
-                    </button>
-                    <h3>{selectedExercise || 'Exercise Details'}</h3>
-                    <p>{selectedExerciseDescription || 'Select an exercise to view the PDF description.'}</p>
-                    <p className="subline">Source: NSW Physical Training Guide</p>
-                    <button type="button" className="action-button" onClick={() => setShowExerciseModal(false)}>
-                      Close
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {selectedPlan.notes?.length > 0 && (
                 <div className="notes">
@@ -2507,6 +2507,36 @@ function App() {
               </p>
             </div>
 
+            <div className="card">
+              <h3>Exercise Guide (Timer)</h3>
+              <p className="subline">Select an exercise to open its PDF description.</p>
+              <div className="exercise-guide-row">
+                <label className="exercise-select-label">
+                  Select exercise
+                  <select
+                    value={selectedExercise}
+                    onChange={(event) => openExerciseGuideFor(event.target.value)}
+                  >
+                    {timerExercises.length > 0 && (
+                      <optgroup label="Appears In This Timer Session">
+                        {timerExercises.map((name) => (
+                          <option key={`timer-${name}`} value={name}>{name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    <optgroup label="All PDF Exercises">
+                      {allPdfExercises.map((name) => (
+                        <option key={`timer-all-${name}`} value={name}>{name}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </label>
+                <button type="button" className="ghost-button" onClick={() => openExerciseGuideFor(selectedExercise)}>
+                  Open Guide
+                </button>
+              </div>
+            </div>
+
             {isChecklistDay ? (
               <div className="card checklist-card">
                 <h3>{nswProgramActive ? 'NSW Session Checklist' : isSwimDay ? 'Swim Session Checklist' : 'Test Day Checklist'}</h3>
@@ -2571,6 +2601,7 @@ function App() {
                 </div>
               </div>
             )}
+
           </div>
         )}
 
@@ -2810,6 +2841,27 @@ function App() {
           <span>Week Cal</span>
         </button>
       </nav>
+
+      {showExerciseModal && (
+        <div className="exercise-modal-backdrop" role="presentation">
+          <div className="exercise-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="exercise-modal-close"
+              aria-label="Close exercise description"
+              onClick={() => setShowExerciseModal(false)}
+            >
+              X
+            </button>
+            <h3>{selectedExercise || 'Exercise Details'}</h3>
+            <p>{selectedExerciseDescription || 'Select an exercise to view the PDF description.'}</p>
+            <p className="subline">Source: NSW Physical Training Guide</p>
+            <button type="button" className="action-button" onClick={() => setShowExerciseModal(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
