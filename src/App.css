@@ -433,14 +433,6 @@ textarea {
   margin-top: 0;
 }
 
-.stopwatch-top-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 0.7rem;
-  flex-wrap: wrap;
-}
-
 .stopwatch-display {
   margin: 0.55rem 0;
   font-family: Rockwell, Georgia, serif;

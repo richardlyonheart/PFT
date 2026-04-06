@@ -1620,6 +1620,7 @@ function App() {
   const [authError, setAuthError] = useState('')
   const applyingRemoteRef = useRef(false)
   const lastCloudPayloadRef = useRef('')
+  const wakeLockRef = useRef(null)
 
   useEffect(() => {
     localStorage.setItem(getProfileStorageKey(STORAGE_KEY, activeProfile), JSON.stringify(logs))
@@ -1887,7 +1888,6 @@ function App() {
     remaining: 0
   })
   const [stopwatchState, setStopwatchState] = useState({
-    mode: 'run',
     status: 'idle',
     elapsedMs: 0,
     startedAt: 0,
@@ -2046,17 +2046,6 @@ function App() {
     setShowExerciseModal(true)
   }
 
-  const setStopwatchMode = (mode) => {
-    setStopwatchState((current) => ({
-      ...current,
-      mode,
-      status: 'idle',
-      elapsedMs: 0,
-      startedAt: 0,
-      laps: []
-    }))
-  }
-
   const toggleStopwatch = () => {
     setStopwatchState((current) => {
       if (current.status === 'running') {
@@ -2180,6 +2169,75 @@ function App() {
     }, 100)
 
     return () => clearInterval(stopwatchTick)
+  }, [stopwatchState.status])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const releaseWakeLock = async () => {
+      if (!wakeLockRef.current) {
+        return
+      }
+
+      try {
+        await wakeLockRef.current.release()
+      } catch {
+        // Ignore release errors from unsupported/expired locks.
+      } finally {
+        wakeLockRef.current = null
+      }
+    }
+
+    const acquireWakeLock = async () => {
+      if (
+        cancelled ||
+        typeof navigator === 'undefined' ||
+        !('wakeLock' in navigator) ||
+        stopwatchState.status !== 'running' ||
+        document.visibilityState !== 'visible'
+      ) {
+        return
+      }
+
+      try {
+        const lock = await navigator.wakeLock.request('screen')
+        if (cancelled) {
+          await lock.release()
+          return
+        }
+
+        wakeLockRef.current = lock
+        lock.addEventListener('release', () => {
+          if (wakeLockRef.current === lock) {
+            wakeLockRef.current = null
+          }
+        })
+      } catch {
+        // Some browsers/devices block wake lock; stopwatch still works without it.
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && stopwatchState.status === 'running') {
+        acquireWakeLock()
+      } else {
+        releaseWakeLock()
+      }
+    }
+
+    if (stopwatchState.status === 'running') {
+      acquireWakeLock()
+    } else {
+      releaseWakeLock()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      releaseWakeLock()
+    }
   }, [stopwatchState.status])
 
   useEffect(() => {
@@ -2646,20 +2704,7 @@ function App() {
             </div>
 
             <div className="card stopwatch-card">
-              <h3>Run/Swim Stopwatch</h3>
-              <div className="stopwatch-top-row">
-                <label className="exercise-select-label">
-                  Activity
-                  <select
-                    value={stopwatchState.mode}
-                    onChange={(event) => setStopwatchMode(event.target.value)}
-                  >
-                    <option value="run">Run</option>
-                    <option value="swim">Swim</option>
-                  </select>
-                </label>
-                <p className="timer-status">Mode: {stopwatchState.mode}</p>
-              </div>
+              <h3>Stopwatch</h3>
               <p className="stopwatch-display">{formatStopwatch(stopwatchState.status === 'running' ? stopwatchState.elapsedMs + (Date.now() - stopwatchState.startedAt) : stopwatchState.elapsedMs)}</p>
               <div className="timer-actions">
                 <button type="button" className="action-button" onClick={toggleStopwatch}>
