@@ -50,6 +50,24 @@ const defaultWorkoutSelection = {
 const weekDayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 const NSW_TOTAL_WEEKS = 26
+const NSW_INTERVAL_CHART = [
+  { min: 480, max: 510, runRepeat: '1:16-1:21', runRecovery: '2:32-3:23', swimRepeat: '1:34-1:40', swimRecovery: '3:08-4:10' },
+  { min: 510, max: 540, runRepeat: '1:21-1:26', runRecovery: '2:42-3:35', swimRepeat: '1:40-1:46', swimRecovery: '3:20-4:25' },
+  { min: 540, max: 570, runRepeat: '1:26-1:31', runRecovery: '2:52-3:48', swimRepeat: '1:46-1:52', swimRecovery: '3:32-4:40' },
+  { min: 570, max: 600, runRepeat: '1:31-1:36', runRecovery: '3:02-4:00', swimRepeat: '1:52-1:58', swimRecovery: '3:44-4:55' },
+  { min: 600, max: 630, runRepeat: '1:36-1:41', runRecovery: '3:12-4:13', swimRepeat: '1:58-2:04', swimRecovery: '3:56-5:10' },
+  { min: 630, max: 660, runRepeat: '1:41-1:46', runRecovery: '3:22-4:25', swimRepeat: '2:04-2:10', swimRecovery: '4:08-5:25' },
+  { min: 660, max: 690, runRepeat: '1:46-1:51', runRecovery: '3:32-4:38', swimRepeat: '2:10-2:16', swimRecovery: '4:20-5:40' },
+  { min: 690, max: 720, runRepeat: '1:51-1:56', runRecovery: '3:42-4:50', swimRepeat: '2:16-2:22', swimRecovery: '4:32-5:55' },
+  { min: 720, max: 750, runRepeat: '1:56-2:01', runRecovery: '3:52-5:03', swimRepeat: '2:22-2:28', swimRecovery: '4:44-6:10' },
+  { min: 750, max: 780, runRepeat: '2:01-2:06', runRecovery: '4:02-5:15', swimRepeat: '2:28-2:34', swimRecovery: '4:56-6:25' },
+  { min: 780, max: 810, runRepeat: '2:06-2:11', runRecovery: '4:12-5:28', swimRepeat: '2:34-2:40', swimRecovery: '5:08-6:40' },
+  { min: 810, max: 840, runRepeat: '2:11-2:16', runRecovery: '4:22-5:40', swimRepeat: '2:40-2:46', swimRecovery: '5:20-6:55' },
+  { min: 840, max: 870, runRepeat: '2:16-2:21', runRecovery: '4:32-5:53', swimRepeat: '2:46-2:52', swimRecovery: '5:32-7:10' },
+  { min: 870, max: 900, runRepeat: '2:21-2:26', runRecovery: '4:42-6:05', swimRepeat: '2:52-2:58', swimRecovery: '5:44-7:25' },
+  { min: 900, max: 930, runRepeat: '2:26-2:31', runRecovery: '4:52-6:18', swimRepeat: '2:58-3:04', swimRecovery: '5:56-7:40' },
+  { min: 930, max: 960, runRepeat: '2:31-2:36', runRecovery: '5:02-6:30', swimRepeat: '3:04-3:10', swimRecovery: '6:08-7:55' }
+]
 
 function getNswChiPrescription(week) {
   if (week <= 2) return '15 min continuous at 90-95% effort'
@@ -174,124 +192,438 @@ function getNswPhaseName(week) {
   return 'NSW Sharpen'
 }
 
+function isNswCalisthenicsDay(dayName) {
+  return ['Tuesday', 'Thursday', 'Friday', 'Saturday'].includes(dayName)
+}
+
+function isNswCoreDay(dayName) {
+  return ['Tuesday', 'Thursday', 'Friday', 'Saturday'].includes(dayName)
+}
+
+function getNswSupportRoutineFocus(week, dayName) {
+  if (!['Tuesday', 'Thursday'].includes(dayName)) {
+    return 'both'
+  }
+
+  // Alternate support focus on lift+swim days to avoid excessive overlap.
+  return week % 2 === 0 ? 'calisthenics' : 'core'
+}
+
+function getNswPushSitChart(maxInput) {
+  const max = Number(maxInput) || 0
+  if (max < 40) return { sets: '5-6', reps: '10-15', total: '50-90' }
+  if (max <= 60) return { sets: '4-5', reps: '15-20', total: '60-100' }
+  if (max <= 80) return { sets: '4-5', reps: '20-25', total: '80-125' }
+  if (max <= 100) return { sets: '3-4', reps: '30-40', total: '90-160' }
+  return { sets: '3-4', reps: '40-50', total: '120-200' }
+}
+
+function getNswPullChart(maxInput) {
+  const max = Number(maxInput) || 0
+  if (max < 6) return { sets: '5-6', reps: '2-3', total: '10-18' }
+  if (max <= 9) return { sets: '4-5', reps: '4-5', total: '16-25' }
+  if (max <= 12) return { sets: '4-5', reps: '5-6', total: '20-30' }
+  if (max <= 15) return { sets: '3-4', reps: '8-10', total: '24-40' }
+  return { sets: '3-4', reps: '10-12', total: '30-48' }
+}
+
+function getNswIntervalChartRecommendation(runInput, swimInput) {
+  const runSeconds = parseTimeToSeconds(runInput)
+  const swimSeconds = parseTimeToSeconds(swimInput)
+  const runRow = runSeconds ? NSW_INTERVAL_CHART.find((row) => runSeconds >= row.min && runSeconds <= row.max) : null
+  const swimRow = swimSeconds ? NSW_INTERVAL_CHART.find((row) => swimSeconds >= row.min && swimSeconds <= row.max) : null
+
+  return {
+    runRow,
+    swimRow,
+    runSupportedRange: '8:00-16:00',
+    swimSupportedRange: '8:00-16:00'
+  }
+}
+
+function getNswDayCalculatedTargets(plan, chartTargets) {
+  if (!plan?.week || plan.week < 1) {
+    return []
+  }
+
+  const lines = []
+  const addLine = (text, source = '') => {
+    lines.push({ text, source })
+  }
+  const coreLines = getNswCoreProgression(plan.week)
+  const pushChart = chartTargets?.pushChart
+  const sitChart = chartTargets?.sitChart
+  const pullChart = chartTargets?.pullChart
+  const runRow = chartTargets?.intervalChart?.runRow
+  const swimRow = chartTargets?.intervalChart?.swimRow
+  const calDay = isNswCalisthenicsDay(plan.dayName)
+  const coreDay = isNswCoreDay(plan.dayName)
+  const supportFocus = getNswSupportRoutineFocus(plan.week, plan.dayName)
+
+  if (plan.dayName === 'Monday') {
+    addLine('Run LSD uses talk-test effort: conversational pace for prescribed distance', 'LSD')
+    addLine('Lift block: upper-body strength split (single-set 8-12 reps)', 'Table 5')
+    return lines
+  }
+
+  if (plan.dayName === 'Tuesday') {
+    addLine('Swim CHI target: 90-95% sustained effort, use active recovery if split sets are used', 'CHI')
+    addLine('Lift block: lower-body strength split (single-set 8-12 reps)', 'Table 5')
+    addLine(`Support routine focus: ${supportFocus === 'calisthenics' ? 'Calisthenics (Table 2)' : 'Core (Table 3)'} on this lift day`, 'Table 5')
+    if (supportFocus === 'calisthenics') {
+      if (pushChart) addLine(`Push-ups: ${pushChart.sets} sets x ${pushChart.reps} reps (total ${pushChart.total})`, 'Table 2')
+      if (sitChart) addLine(`Sit-ups: ${sitChart.sets} sets x ${sitChart.reps} reps (total ${sitChart.total})`, 'Table 2')
+      if (pullChart) addLine(`Pull-ups: ${pullChart.sets} sets x ${pullChart.reps} reps (total ${pullChart.total})`, 'Table 2')
+    }
+    if (supportFocus === 'core' && coreDay) coreLines.forEach((line) => addLine(`Core block: ${line}`, 'Table 3'))
+    return lines
+  }
+
+  if (plan.dayName === 'Wednesday') {
+    if (runRow) {
+      addLine(`Run INT pace: 400m repeats at ${runRow.runRepeat}`, 'Table 1')
+      addLine(`Run INT recovery: ${runRow.runRecovery} active recovery`, 'Table 1')
+    } else {
+      addLine('Run INT chart requires 1.5-mile baseline between 8:00 and 16:00', 'Table 1')
+    }
+    addLine('Lift block: upper-body strength split (single-set 8-12 reps)', 'Table 5')
+    return lines
+  }
+
+  if (plan.dayName === 'Thursday') {
+    addLine('Swim LSD target: steady conversational effort for prescribed yards', 'LSD')
+    addLine('Lift block: lower-body strength split (single-set 8-12 reps)', 'Table 5')
+    addLine(`Support routine focus: ${supportFocus === 'calisthenics' ? 'Calisthenics (Table 2)' : 'Core (Table 3)'} on this lift day`, 'Table 5')
+    if (supportFocus === 'calisthenics') {
+      if (calDay && pushChart) addLine(`Push-ups: ${pushChart.sets} x ${pushChart.reps}`, 'Table 2')
+      if (calDay && sitChart) addLine(`Sit-ups: ${sitChart.sets} x ${sitChart.reps}`, 'Table 2')
+      if (calDay && pullChart) addLine(`Pull-ups: ${pullChart.sets} x ${pullChart.reps}`, 'Table 2')
+    }
+    if (supportFocus === 'core' && coreDay) coreLines.forEach((line) => addLine(`Core block: ${line}`, 'Table 3'))
+    return lines
+  }
+
+  if (plan.dayName === 'Friday') {
+    addLine('Run CHI target: sustained 90-95% effort with controlled form', 'CHI')
+    if (calDay && pushChart) addLine(`Push-ups: ${pushChart.sets} x ${pushChart.reps}`, 'Table 2')
+    if (calDay && sitChart) addLine(`Sit-ups: ${sitChart.sets} x ${sitChart.reps}`, 'Table 2')
+    if (calDay && pullChart) addLine(`Pull-ups: ${pullChart.sets} x ${pullChart.reps}`, 'Table 2')
+    if (coreDay) coreLines.forEach((line) => addLine(`Core block: ${line}`, 'Table 3'))
+    return lines
+  }
+
+  if (plan.dayName === 'Saturday') {
+    if (swimRow) {
+      addLine(`Swim INT pace: 100y repeats at ${swimRow.swimRepeat}`, 'Table 1')
+      addLine(`Swim INT recovery: ${swimRow.swimRecovery} active recovery`, 'Table 1')
+    } else {
+      addLine('Swim INT chart requires 500y baseline between 8:00 and 16:00', 'Table 1')
+    }
+    if (calDay && pushChart) addLine(`Push-ups: ${pushChart.sets} x ${pushChart.reps}`, 'Table 2')
+    if (calDay && sitChart) addLine(`Sit-ups: ${sitChart.sets} x ${sitChart.reps}`, 'Table 2')
+    if (calDay && pullChart) addLine(`Pull-ups: ${pullChart.sets} x ${pullChart.reps}`, 'Table 2')
+    if (coreDay) coreLines.forEach((line) => addLine(`Core block: ${line}`, 'Table 3'))
+    return lines
+  }
+
+  addLine('Recovery day: mobility and flexibility only', 'Recovery')
+  return lines
+}
+
+const exerciseDescriptions = {
+  'Run LSD': 'Long Slow Distance run at low to moderate effort using the talk test. You should be able to speak in short phrases while moving continuously.',
+  'Swim LSD': 'Long Slow Distance swim at low to moderate effort. Focus on smooth rhythm and continuous movement while maintaining form.',
+  'Run CHI': 'Continuous High Intensity run for 15-20 minutes (or split repeats later) at about 90-95% of maximal sustainable pace.',
+  'Swim CHI': 'Continuous High Intensity swim for 15-20 minutes (or split repeats later) at about 90-95% of maximal sustainable pace.',
+  'Run Intervals': 'Perform 400m repeats with active recovery at 2x-2.5x work time. Pace should be slightly faster than base pace from 1.5-mile time.',
+  'Swim Intervals': 'Perform 100y repeats with active recovery at 2x-2.5x work time. Pace should be slightly faster than base pace from 500y time.',
+  'Push-up': 'Start in front-leaning rest with feet together and body straight from head to heels. Lower as one unit until elbows are at right angle, then press up as one unit.',
+  'Sit-up': 'Lie with knees bent and heels near glutes, arms across chest. Curl up until elbows touch thighs below knees, then lower until shoulder blades touch floor.',
+  'Pull-up': 'Begin in dead hang with overhand grip. Pull until chin reaches bar height, then lower under control to full arm extension without kipping.',
+  'Bridge': 'From supine bent-knee position, raise hips to straight line from knees to shoulders. Alternate single-leg support while keeping pelvis level.',
+  'Plank': 'Support body on forearms and toes with straight line from heels to shoulders. Hold by bracing core without letting hips sag or pike.',
+  'Side Plank': 'Support body on one forearm with straight spine and stacked hips. Keep hips from dropping and hold each side for prescribed time.',
+  'Bird Dog': 'From hands-and-knees, extend opposite arm and leg to horizontal while keeping torso stable and hips level; alternate sides.',
+  'Superman': 'Lying prone, lift both arms and feet slightly off floor while keeping limbs straight, hold briefly, then relax and repeat.',
+  'Wipers': 'Lying on back with legs raised to 90 degrees, rotate legs side-to-side in a windshield-wiper arc while keeping shoulders on floor.',
+  'Lat Pull-Down': 'Upper-body pulling movement used in strength sessions to build lats and pull-up support strength.',
+  'Shoulder Press': 'Overhead pressing movement used for upper-body strength and shoulder stability.',
+  'Biceps Curl': 'Elbow flexion strength movement used to support pulling endurance.',
+  'Bench Press': 'Horizontal pressing movement used to build chest, shoulder, and triceps strength.',
+  'Incline Press': 'Inclined pressing variation emphasizing upper chest and shoulder pressing strength.',
+  'Seated Row': 'Horizontal pull movement targeting upper back and posture muscles.',
+  'Deltoid Lateral Raise': 'Raise arms laterally to shoulder height to develop deltoid strength and shoulder control.',
+  'Upright Row': 'Vertical pulling movement for shoulder girdle and upper-back strength.',
+  'Triceps Extension': 'Elbow extension movement for triceps strength used in pressing endurance.',
+  'Dips': 'Bodyweight pressing movement emphasizing triceps, chest, and shoulder stability.',
+  'Lunges': 'Single-leg lower-body strength movement improving leg drive and stability.',
+  'Leg Curl': 'Hamstring-focused movement for posterior-chain support and knee balance.',
+  'Back Hyperextension': 'Posterior-chain and spinal-extensor strengthening movement used in lower-body routines.',
+  'Deadlift': 'Hip-hinge strength movement for glutes, hamstrings, and back integrity.',
+  'Leg Press': 'Lower-body strength movement for quads and glutes with controlled loading.',
+  'Squat': 'Foundational lower-body strength movement for hips, quads, and trunk control.',
+  'Heel Raise': 'Calf-strength movement supporting running and swimming propulsion mechanics.',
+  'Flexibility': 'Daily post-cardio stretching while tissues are warm to maintain mobility and reduce injury risk.',
+  'Warm-up': 'Gradual 5-15 minute prep increasing heart rate and breathing, including short bursts before high-intensity sessions.',
+  'Cool-down': 'Easy movement after training until breathing and heart rate return closer to resting levels.'
+}
+
+const exerciseKeywordMap = [
+  { key: 'Run LSD', patterns: ['run lsd', 'long slow distance run'] },
+  { key: 'Swim LSD', patterns: ['swim lsd', 'long slow distance swim'] },
+  { key: 'Run CHI', patterns: ['run chi'] },
+  { key: 'Swim CHI', patterns: ['swim chi'] },
+  { key: 'Run Intervals', patterns: ['run interval', '400m'] },
+  { key: 'Swim Intervals', patterns: ['swim interval', '100y'] },
+  { key: 'Push-up', patterns: ['push-up', 'pushups', 'push ups'] },
+  { key: 'Sit-up', patterns: ['sit-up', 'situps', 'sit ups'] },
+  { key: 'Pull-up', patterns: ['pull-up', 'pullups', 'pull ups'] },
+  { key: 'Bridge', patterns: ['bridge'] },
+  { key: 'Plank', patterns: ['plank'] },
+  { key: 'Side Plank', patterns: ['side plank'] },
+  { key: 'Bird Dog', patterns: ['bird dog'] },
+  { key: 'Superman', patterns: ['superman'] },
+  { key: 'Wipers', patterns: ['wipers', 'windshield'] },
+  { key: 'Lat Pull-Down', patterns: ['lat pull-down', 'lat pull down'] },
+  { key: 'Shoulder Press', patterns: ['shoulder press', 'military press'] },
+  { key: 'Biceps Curl', patterns: ['biceps curl'] },
+  { key: 'Bench Press', patterns: ['bench press'] },
+  { key: 'Incline Press', patterns: ['incline press'] },
+  { key: 'Seated Row', patterns: ['seated row'] },
+  { key: 'Deltoid Lateral Raise', patterns: ['lateral raise', 'deltoid lateral raise'] },
+  { key: 'Upright Row', patterns: ['upright row'] },
+  { key: 'Triceps Extension', patterns: ['triceps extension'] },
+  { key: 'Dips', patterns: ['dips'] },
+  { key: 'Lunges', patterns: ['lunges'] },
+  { key: 'Leg Curl', patterns: ['leg curl'] },
+  { key: 'Back Hyperextension', patterns: ['back hyperextension'] },
+  { key: 'Deadlift', patterns: ['deadlift'] },
+  { key: 'Leg Press', patterns: ['leg press'] },
+  { key: 'Squat', patterns: ['squat'] },
+  { key: 'Heel Raise', patterns: ['heel raise'] },
+  { key: 'Warm-up', patterns: ['warm-up', 'warm up'] },
+  { key: 'Cool-down', patterns: ['cool-down', 'cool down'] },
+  { key: 'Flexibility', patterns: ['flexibility', 'stretching'] }
+]
+
+function getExercisesForPlan(plan) {
+  if (!plan) {
+    return []
+  }
+
+  const textPool = [plan.title, ...(plan.workouts || []), ...(plan.notes || [])]
+    .join(' ')
+    .toLowerCase()
+
+  const found = exerciseKeywordMap
+    .filter((entry) => entry.patterns.some((pattern) => textPool.includes(pattern)))
+    .map((entry) => entry.key)
+
+  return Array.from(new Set(found))
+}
+
 function getNswDaySession(weekInput, dayName) {
   const week = clamp(Number(weekInput) || 1, 1, NSW_TOTAL_WEEKS)
   const weekPlan = getNswWeekPlan(week)
   const coreProgression = getNswCoreProgression(week)
   const calExamples = getNswCalisthenicsExamples()
+  const supportFocus = getNswSupportRoutineFocus(week, dayName)
+  const coreBlock = [
+    `Bridge: ${coreProgression[0].split(': ')[1]}`,
+    `Plank: ${coreProgression[1].split(': ')[1]}`,
+    `Side plank: ${coreProgression[2].split(': ')[1]}`,
+    `Bird dog: ${coreProgression[3].split(': ')[1]}`,
+    `Superman: ${coreProgression[4].split(': ')[1]}`,
+    `Wipers: ${coreProgression[5].split(': ')[1]}`
+  ]
 
   if (dayName === 'Monday') {
     return {
-      title: 'Run LSD + Upper/Core',
+      title: 'Run LSD + Upper Lift',
+      amSession: [
+        'Upper-body lift split (single-set 8-12 reps per movement)'
+      ],
+      pmSession: [
+        `Run LSD: ${weekPlan.runLsdMiles} miles at easy-moderate talk-test pace`,
+        'Flexibility: post-run stretching routine'
+      ],
       workouts: [
         `Run LSD: ${weekPlan.runLsdMiles} miles at easy-moderate talk-test pace`,
         'Warm-up: 5-10 min easy jog, gradually build',
         'Cool-down: easy jog/walk until breathing normalizes',
-        'Strength (upper): single sets of 8-12 reps per movement, move station-to-station briskly',
-        'Example upper lifts: lat pull-down, shoulder press, incline/bench press, seated row, triceps extension/dips, biceps curls',
-        'Example workout: final mile slightly faster while staying conversational'
+        'Lift (upper): single sets of 8-12 reps per movement, move station-to-station briskly',
+        'Upper lift menu: lat pull-down, shoulder press, biceps curl, bench/incline press, seated row, lateral raise, upright row, triceps extension or dips',
+        'Flexibility: post-cardio stretching routine'
       ],
       notes: [
-        'PDF guideline: build toward comfortably running 5-6 miles without stopping',
-        'Complete daily flexibility after cardio',
-        ...coreProgression.slice(0, 2)
+        'Table 5 pattern: Monday run LSD with upper-body lift',
+        'PDF guideline: build toward comfortably running 5-6 miles without stopping'
       ]
     }
   }
 
   if (dayName === 'Tuesday') {
+    const supportBlock = supportFocus === 'calisthenics'
+      ? [
+        'Calisthenics block (focus day): push-ups, sit-ups, pull-ups with strict PST form',
+        ...calExamples.slice(0, 3)
+      ]
+      : [
+        'Core block (focus day): complete full Table 3 progression set',
+        ...coreBlock
+      ]
+
     return {
-      title: 'Swim CHI + Lower + Calisthenics',
+      title: 'Swim CHI + Lower Lift + Cal/Core',
+      amSession: [
+        'Lower-body lift split (single-set 8-12 reps)',
+        `Support routine (choose one): ${supportFocus === 'calisthenics' ? 'Calisthenics' : 'Core'}`
+      ],
+      pmSession: [
+        `Swim CHI: ${weekPlan.swimChi}`,
+        'Flexibility: post-swim stretching routine'
+      ],
       workouts: [
         `Swim CHI: ${weekPlan.swimChi}`,
         'Intensity should feel 8-9 out of 10, demanding but controlled',
-        'When doing 2+ reps, recover actively for about half the work time',
-        'Lower-body strength: lunges, leg curl, deadlift, squat/leg press, heel raises (single-set focus)',
-        'Calisthenics block: push-ups, sit-ups, pull-ups with strict form'
+        'Lift (lower): lunges, leg curl, back hyperextension, deadlift, leg press or squat, heel raise',
+        ...supportBlock,
+        'Flexibility: post-swim stretching routine'
       ],
       notes: [
+        'Table 5 pattern: Tuesday swim CHI with lower-body lift and support work',
+        'Avoid over-exercising: on lift days, keep support work to one routine focus',
         'Example swim CHI: 2 x 12 min hard with 6 min easy stroke recovery (mid/late cycle)',
-        ...calExamples.slice(0, 3),
-        'Complete daily flexibility after cardio'
+        ...calExamples.slice(0, 3)
       ]
     }
   }
 
   if (dayName === 'Wednesday') {
     return {
-      title: 'Run Intervals + Core + Calisthenics',
+      title: 'Run Intervals + Upper Lift',
+      amSession: [
+        'Upper-body lift split (single-set 8-12 reps per movement)'
+      ],
+      pmSession: [
+        `Run intervals: ${weekPlan.runIntReps} x 400m`,
+        'Flexibility: post-run stretching routine'
+      ],
       workouts: [
         `Run intervals: ${weekPlan.runIntReps} x 400m`,
         'Work pace: about 4s faster than your current 400m base pace from 1.5-mile time',
         'Recovery between intervals: 2x to 2.5x work interval time, active recovery only',
         'Warm-up 10-15 min including 4-5 short high-intensity bursts',
-        'Cool-down until heart rate and breathing are near baseline'
+        'Lift (upper): single sets of 8-12 reps per movement with push/pull balance',
+        'Upper lift menu: lat pull-down, shoulder press, biceps curl, bench/incline press, seated row, lateral raise, upright row, triceps extension or dips',
+        'Cool-down and flexibility: continue until heart rate and breathing are near baseline'
       ],
       notes: [
+        'Table 5 pattern: Wednesday run INT with upper-body lift',
         'Example interval progression: begin at 4 reps and build toward 10 reps',
-        'Advanced variation every 4th/5th week: 16-20 x 220y repeats',
-        ...coreProgression.slice(2, 4),
-        'Complete daily flexibility after cardio'
+        'Advanced variation every 4th/5th week: 16-20 x 220y repeats'
       ]
     }
   }
 
   if (dayName === 'Thursday') {
+    const supportBlock = supportFocus === 'calisthenics'
+      ? [
+        'Calisthenics block (focus day): push-ups, sit-ups, pull-ups with strict PST form',
+        ...calExamples.slice(3)
+      ]
+      : [
+        'Core block (focus day): complete full Table 3 progression set',
+        ...coreBlock
+      ]
+
     return {
-      title: 'Swim LSD + Core + Calisthenics',
+      title: 'Swim LSD + Lower Lift + Cal/Core',
+      amSession: [
+        'Lower-body lift split (single-set 8-12 reps)',
+        `Support routine (choose one): ${supportFocus === 'calisthenics' ? 'Calisthenics' : 'Core'}`
+      ],
+      pmSession: [
+        `Swim LSD: ${weekPlan.swimLsdYards} yards continuous`,
+        'Flexibility: post-swim stretching routine'
+      ],
       workouts: [
         `Swim LSD: ${weekPlan.swimLsdYards} yards continuous`,
         'Easy-moderate pace using talk-test equivalent effort and smooth breathing rhythm',
-        'Calisthenics block: push-ups, sit-ups, pull-ups with 1-2 min between sets',
-        'Core progression work from bridge/plank/side plank/bird dog/superman/wipers',
-        'Keep technique strict; avoid sloppy reps under fatigue'
+        'Lift (lower): lunges, leg curl, back hyperextension, deadlift, leg press or squat, heel raise',
+        ...supportBlock,
+        'Flexibility: post-swim stretching routine'
       ],
       notes: [
+        'Table 5 pattern: Thursday swim LSD with lower-body lift and support work',
+        'Avoid over-exercising: on lift days, keep support work to one routine focus',
         'PDF guideline: build toward comfortably swimming 1-1.25 miles without stopping',
-        ...calExamples.slice(3),
-        'Complete daily flexibility after cardio'
+        ...calExamples.slice(3)
       ]
     }
   }
 
   if (dayName === 'Friday') {
     return {
-      title: 'Run CHI + Upper/Core',
+      title: 'Run CHI + Cal/Core',
+      amSession: [
+        'Calisthenics block: push-ups, sit-ups, pull-ups',
+        'Core block: full Table 3 progression set'
+      ],
+      pmSession: [
+        `Run CHI: ${weekPlan.runChi}`,
+        'Flexibility: post-run stretching routine'
+      ],
       workouts: [
         `Run CHI: ${weekPlan.runChi}`,
         'Intensity should feel 8-9 out of 10 with controlled form',
         'If split into repeats, use active recovery at about half work duration',
-        'Upper-body strength session with push/pull balance',
-        'Keep transitions quick to maintain total session intensity'
+        'Calisthenics block: push-ups, sit-ups, pull-ups with strict PST form',
+        ...coreBlock,
+        'Flexibility: post-run stretching routine'
       ],
       notes: [
-        'Example run CHI: 15-20 min continuous hard effort early cycle',
-        ...coreProgression.slice(4, 6),
-        'Complete daily flexibility after cardio'
+        'Table 5 pattern: Friday run CHI with calisthenics/core support',
+        'Example run CHI: 15-20 min continuous hard effort early cycle'
       ]
     }
   }
 
   if (dayName === 'Saturday') {
     return {
-      title: 'Swim Intervals + Lower + Calisthenics',
+      title: 'Swim Intervals + Cal/Core',
+      amSession: [
+        'Calisthenics block: push-ups, sit-ups, pull-ups',
+        'Core block: full Table 3 progression set'
+      ],
+      pmSession: [
+        `Swim intervals: ${weekPlan.swimIntReps} x 100y`,
+        'Flexibility: post-swim stretching routine'
+      ],
       workouts: [
         `Swim intervals: ${weekPlan.swimIntReps} x 100y`,
         'Work pace: about 2s faster than your current 100y base pace from 500y time',
         'Recovery between reps: 2x to 2.5x work interval time, keep moving easy',
-        'Lower-body strength split and strict calisthenics follow-up',
-        'Do not exceed 10 intervals in the standard progression'
+        'Calisthenics block: push-ups, sit-ups, pull-ups with strict PST form',
+        ...coreBlock,
+        'Flexibility: post-swim stretching routine'
       ],
       notes: [
+        'Table 5 pattern: Saturday swim INT with calisthenics/core support',
         'Example advanced variation: 16-20 x 50y intervals every 4th/5th week',
-        'Track fastest and slowest interval and minimize pacing drift',
-        'Complete daily flexibility after cardio'
+        'Track fastest and slowest interval and minimize pacing drift'
       ]
     }
   }
 
   return {
     title: 'Recovery + Flexibility',
+    amSession: [
+      'Optional mobility circuit and recovery breathing'
+    ],
+    pmSession: [
+      'Flexibility and easy recovery movement only'
+    ],
     workouts: [
       'Active recovery only: easy walk, mobility, and tissue care',
       'Daily flexibility emphasis and movement quality work',
@@ -1207,7 +1539,9 @@ function App() {
   const [nswOption, setNswOption] = useState('preview')
   const [logs, setLogs] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).logs)
   const [goals, setGoals] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).goals)
-  const [pstInputs, setPstInputs] = useState({ run15: '', swim500y: '' })
+  const [pstInputs, setPstInputs] = useState({ run15: '', swim500y: '', pushups: '', situps: '', pullups: '' })
+  const [selectedExercise, setSelectedExercise] = useState('')
+  const [showExerciseModal, setShowExerciseModal] = useState(false)
   const [firebaseApi, setFirebaseApi] = useState(null)
   const [cloudStatus, setCloudStatus] = useState('Checking cloud config...')
   const [cloudUid, setCloudUid] = useState('')
@@ -1488,12 +1822,9 @@ function App() {
   })
   const [swimChecks, setSwimChecks] = useState([])
   const [programDaysInput, setProgramDaysInput] = useState(() => String(programConfig.programDays))
-  const dayTargets = useMemo(
-    () => (nswProgramActive
-      ? selectedPlan.workouts?.slice(0, 4) || []
-      : getDailyPrescription(selectedPlan, baseline, goalMetrics, programConfig)),
-    [selectedPlan, baseline, goalMetrics, programConfig, nswProgramActive]
-  )
+  const pstBaselinePushups = parseFirstNumber(pstInputs.pushups || logs[0]?.pushups || '')
+  const pstBaselineSitups = parseFirstNumber(pstInputs.situps || logs[0]?.situps || '')
+  const pstBaselinePullups = parseFirstNumber(pstInputs.pullups || logs[0]?.pullups || '')
   const nswWeekPlan = useMemo(() => getNswWeekPlan(nswWeek), [nswWeek])
   const nswCalendarPlan = useMemo(
     () => Array.from({ length: NSW_TOTAL_WEEKS }, (_, index) => getNswWeekPlan(index + 1)),
@@ -1505,6 +1836,21 @@ function App() {
   const pstTargets = useMemo(
     () => getPstIntervalTargets(pstBaselineRun, pstBaselineSwim),
     [pstBaselineRun, pstBaselineSwim]
+  )
+  const nswChartTargets = useMemo(
+    () => ({
+      intervalChart: getNswIntervalChartRecommendation(pstBaselineRun, pstBaselineSwim),
+      pushChart: pstBaselinePushups ? getNswPushSitChart(pstBaselinePushups) : null,
+      sitChart: pstBaselineSitups ? getNswPushSitChart(pstBaselineSitups) : null,
+      pullChart: pstBaselinePullups ? getNswPullChart(pstBaselinePullups) : null
+    }),
+    [pstBaselineRun, pstBaselineSwim, pstBaselinePushups, pstBaselineSitups, pstBaselinePullups]
+  )
+  const dayTargets = useMemo(
+    () => (nswProgramActive
+      ? getNswDayCalculatedTargets(selectedPlan, nswChartTargets)
+      : getDailyPrescription(selectedPlan, baseline, goalMetrics, programConfig)),
+    [selectedPlan, nswChartTargets, baseline, goalMetrics, programConfig, nswProgramActive]
   )
   const nswPlanApplied =
     activeProfile === NSW_PROFILE &&
@@ -1518,6 +1864,9 @@ function App() {
   const isChecklistDay = isSwimDay || isTestDay
   const activeWorkoutItems = workoutCatalog.filter((item) => workoutEnabled(programConfig.selectedWorkouts, item.id))
   const activeWorkoutLabels = activeWorkoutItems.map((item) => item.label)
+  const allPdfExercises = Object.keys(exerciseDescriptions)
+  const todaysExercises = useMemo(() => getExercisesForPlan(selectedPlan), [selectedPlan])
+  const selectedExerciseDescription = selectedExercise ? exerciseDescriptions[selectedExercise] : ''
   const baselineCoverageByWorkout = {
     row2k: baseline.hasRow2kBaseline,
     pushups: baseline.hasPushupBaseline,
@@ -1648,13 +1997,22 @@ function App() {
   }, [selectedDay])
 
   useEffect(() => {
+    const nextSelection = todaysExercises[0] || allPdfExercises[0] || ''
+    setSelectedExercise(nextSelection)
+    setShowExerciseModal(false)
+  }, [selectedDay, activeProfile, todaysExercises, allPdfExercises])
+
+  useEffect(() => {
     setProgramDaysInput(String(programConfig.programDays))
   }, [programConfig.programDays])
 
   useEffect(() => {
     setPstInputs({
       run15: logs[0]?.run15 || '',
-      swim500y: logs[0]?.swim500y || ''
+      swim500y: logs[0]?.swim500y || '',
+      pushups: logs[0]?.pushups || '',
+      situps: logs[0]?.situps || '',
+      pullups: logs[0]?.pullups || ''
     })
   }, [activeProfile])
 
@@ -1809,7 +2167,12 @@ function App() {
                 )}
                 <ul>
                   {dayTargets.map((target, index) => (
-                    <li key={index}>{target}</li>
+                    <li key={index} className="target-item">
+                      <span>{typeof target === 'string' ? target : target.text}</span>
+                      {typeof target !== 'string' && target.source && (
+                        <span className="target-source">{target.source}</span>
+                      )}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -1819,6 +2182,66 @@ function App() {
                   <li key={index}>{work}</li>
                 ))}
               </ul>
+
+              {nswProgramActive && (selectedPlan.amSession?.length > 0 || selectedPlan.pmSession?.length > 0) && (
+                <div className="am-pm-grid">
+                  <div className="am-pm-card">
+                    <h3>AM Session</h3>
+                    <ul>
+                      {(selectedPlan.amSession || []).map((item, index) => (
+                        <li key={`am-${index}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="am-pm-card">
+                    <h3>PM Session</h3>
+                    <ul>
+                      {(selectedPlan.pmSession || []).map((item, index) => (
+                        <li key={`pm-${index}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              <div className="exercise-guide-row">
+                <label className="exercise-select-label">
+                  Exercise Guide
+                  <select
+                    value={selectedExercise}
+                    onChange={(event) => setSelectedExercise(event.target.value)}
+                  >
+                    {todaysExercises.length > 0 && (
+                      <optgroup label="Appears In This Day">
+                        {todaysExercises.map((name) => (
+                          <option key={`today-${name}`} value={name}>{name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    <optgroup label="All PDF Exercises">
+                      {allPdfExercises.map((name) => (
+                        <option key={`all-${name}`} value={name}>{name}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </label>
+                <button type="button" className="ghost-button" onClick={() => setShowExerciseModal(true)}>
+                  Show Description
+                </button>
+              </div>
+
+              {showExerciseModal && (
+                <div className="exercise-modal-backdrop" role="presentation" onClick={() => setShowExerciseModal(false)}>
+                  <div className="exercise-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+                    <h3>{selectedExercise || 'Exercise Details'}</h3>
+                    <p>{selectedExerciseDescription || 'Select an exercise to view the PDF description.'}</p>
+                    <p className="subline">Source: NSW Physical Training Guide</p>
+                    <button type="button" className="action-button" onClick={() => setShowExerciseModal(false)}>
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {selectedPlan.notes?.length > 0 && (
                 <div className="notes">
@@ -1845,6 +2268,26 @@ function App() {
                     />
                   </label>
                 ))}
+                {nswProgramActive && (
+                  <>
+                    <label>
+                      Sit-up result
+                      <input
+                        value={selectedLog.situps || ''}
+                        onChange={(event) => updateLog('situps', event.target.value)}
+                        placeholder="e.g. 72"
+                      />
+                    </label>
+                    <label>
+                      Pull-up result
+                      <input
+                        value={selectedLog.pullups || ''}
+                        onChange={(event) => updateLog('pullups', event.target.value)}
+                        placeholder="e.g. 13"
+                      />
+                    </label>
+                  </>
+                )}
                 <label>
                   RPE (1-10)
                   <input
@@ -2036,9 +2479,11 @@ function App() {
               <p className="subline">Built from the NSW Physical Training Guide with optional 26-week track.</p>
               <ul>
                 <li>Weekly layout follows LSD, CHI, and interval work for both run and swim.</li>
+                <li>Table 5 AM-PM format is built in: lifting/support in AM, cardio + flexibility in PM.</li>
                 <li>Strength/core stays in a split routine with calisthenics progression.</li>
                 <li>Warm-up, cool-down, and daily flexibility are required every week.</li>
                 <li>Sunday remains recovery/mobility focused.</li>
+                <li>Lift days use one support focus (calisthenics or core) to avoid overloading.</li>
               </ul>
             </div>
 
@@ -2074,8 +2519,8 @@ function App() {
             </div>
 
             <div className="card nsw-card">
-              <h3>PST Interval Pace Calculator</h3>
-              <p className="subline">Uses the guide formula: run 400m repeats at about 4s faster than base pace, swim 100y at about 2s faster.</p>
+              <h3>PDF Chart Calculators (Table 1 + Table 2)</h3>
+              <p className="subline">Enter baselines to compute chart-based training targets used in the NSW daily schedule.</p>
               <div className="field-grid">
                 <label>
                   1.5 mile baseline
@@ -2093,25 +2538,58 @@ function App() {
                     placeholder="e.g. 10:30"
                   />
                 </label>
+                <label>
+                  Push-up max baseline
+                  <input
+                    value={pstInputs.pushups}
+                    onChange={(event) => setPstInputs((current) => ({ ...current, pushups: event.target.value }))}
+                    placeholder="e.g. 62"
+                  />
+                </label>
+                <label>
+                  Sit-up max baseline
+                  <input
+                    value={pstInputs.situps}
+                    onChange={(event) => setPstInputs((current) => ({ ...current, situps: event.target.value }))}
+                    placeholder="e.g. 70"
+                  />
+                </label>
+                <label>
+                  Pull-up max baseline
+                  <input
+                    value={pstInputs.pullups}
+                    onChange={(event) => setPstInputs((current) => ({ ...current, pullups: event.target.value }))}
+                    placeholder="e.g. 12"
+                  />
+                </label>
               </div>
               <ul>
                 <li>
                   Run 400m base pace: {pstTargets.runQuarterBase ? formatSeconds(pstTargets.runQuarterBase) : 'enter 1.5 mile time'}
                 </li>
                 <li>
-                  Run 400m interval target: {pstTargets.runQuarterTarget ? formatSeconds(pstTargets.runQuarterTarget) : 'enter 1.5 mile time'}
+                  Run Table 1 repeat pace: {nswChartTargets.intervalChart.runRow ? nswChartTargets.intervalChart.runRow.runRepeat : `enter 1.5 mile time (${nswChartTargets.intervalChart.runSupportedRange})`}
                 </li>
                 <li>
-                  Run recovery: {pstTargets.runRecoveryLow ? `${formatSeconds(pstTargets.runRecoveryLow)} to ${formatSeconds(pstTargets.runRecoveryHigh)}` : 'enter 1.5 mile time'}
+                  Run Table 1 recovery: {nswChartTargets.intervalChart.runRow ? nswChartTargets.intervalChart.runRow.runRecovery : `enter 1.5 mile time (${nswChartTargets.intervalChart.runSupportedRange})`}
                 </li>
                 <li>
                   Swim 100y base pace: {pstTargets.swim100Base ? formatSeconds(pstTargets.swim100Base) : 'enter 500y swim time'}
                 </li>
                 <li>
-                  Swim 100y interval target: {pstTargets.swim100Target ? formatSeconds(pstTargets.swim100Target) : 'enter 500y swim time'}
+                  Swim Table 1 repeat pace: {nswChartTargets.intervalChart.swimRow ? nswChartTargets.intervalChart.swimRow.swimRepeat : `enter 500y swim time (${nswChartTargets.intervalChart.swimSupportedRange})`}
                 </li>
                 <li>
-                  Swim recovery: {pstTargets.swimRecoveryLow ? `${formatSeconds(pstTargets.swimRecoveryLow)} to ${formatSeconds(pstTargets.swimRecoveryHigh)}` : 'enter 500y swim time'}
+                  Swim Table 1 recovery: {nswChartTargets.intervalChart.swimRow ? nswChartTargets.intervalChart.swimRow.swimRecovery : `enter 500y swim time (${nswChartTargets.intervalChart.swimSupportedRange})`}
+                </li>
+                <li>
+                  Push-ups Table 2: {nswChartTargets.pushChart ? `${nswChartTargets.pushChart.sets} sets x ${nswChartTargets.pushChart.reps} reps (total ${nswChartTargets.pushChart.total})` : 'enter push-up max'}
+                </li>
+                <li>
+                  Sit-ups Table 2: {nswChartTargets.sitChart ? `${nswChartTargets.sitChart.sets} sets x ${nswChartTargets.sitChart.reps} reps (total ${nswChartTargets.sitChart.total})` : 'enter sit-up max'}
+                </li>
+                <li>
+                  Pull-ups Table 2: {nswChartTargets.pullChart ? `${nswChartTargets.pullChart.sets} sets x ${nswChartTargets.pullChart.reps} reps (total ${nswChartTargets.pullChart.total})` : 'enter pull-up max'}
                 </li>
               </ul>
             </div>

@@ -135,3 +135,8 @@ Also included:
 - PST interval pace calculators for run and swim using baseline times
 - Separate profile slots (`Standard` and `NSW`) so both plans can be saved and switched instantly
 - Full day-by-day NSW workouts in the same Day/Calendar flow as the main program, including PDF-based example workouts and progression notes
+- Chart-based NSW calculations from the PDF integrated into daily targets:
+	- Table 1 run/swim interval repeat + recovery pace ranges
+	- Table 2 push-up/sit-up/pull-up set/rep/total prescriptions
+	- Table 3 bridge/plank/side plank/bird dog/superman/wipers progression by week
+- Table 5 weekly schedule mapping implemented across all 26 weeks (run/swim/lift/calisthenics/core/flexibility day pattern)

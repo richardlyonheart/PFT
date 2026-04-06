@@ -219,6 +219,77 @@ ul {
   padding-left: 1.1rem;
 }
 
+.target-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  justify-content: space-between;
+}
+
+.target-source {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #145247;
+  border: 1px solid rgba(20, 82, 71, 0.25);
+  background: rgba(20, 82, 71, 0.08);
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  white-space: nowrap;
+}
+
+.exercise-guide-row {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: flex-end;
+}
+
+.exercise-select-label {
+  min-width: min(100%, 320px);
+}
+
+.exercise-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 13, 23, 0.48);
+  display: grid;
+  place-items: center;
+  z-index: 130;
+  padding: 1rem;
+}
+
+.exercise-modal {
+  width: min(100%, 560px);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 24px 60px rgba(7, 13, 23, 0.28);
+}
+
+.exercise-modal h3 {
+  margin-top: 0;
+}
+
+.am-pm-grid {
+  margin-top: 0.9rem;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.am-pm-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.7rem;
+  background: #fff;
+}
+
+.am-pm-card h3 {
+  margin: 0 0 0.45rem;
+}
+
 .notes {
   border-top: 1px dashed var(--line);
   margin-top: 0.85rem;
@@ -481,7 +552,8 @@ textarea {
   .field-grid,
   .hero-metrics,
   .toggle-grid,
-  .nsw-calendar-grid {
+  .nsw-calendar-grid,
+  .am-pm-grid {
     grid-template-columns: 1fr;
   }
 }
