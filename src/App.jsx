@@ -38,6 +38,14 @@ const workoutGoalInputs = {
   swim500y: { field: 'swim500yGoal', label: '500 yard swim goal time', placeholder: 'e.g. 9:25' }
 }
 
+const nswGoalInputs = [
+  { field: 'run15Goal', label: '1.5 mile run goal time', placeholder: 'e.g. 9:45' },
+  { field: 'swim500yGoal', label: '500 yard swim goal time', placeholder: 'e.g. 8:50' },
+  { field: 'pushupGoal', label: 'Push-up goal (max strict reps)', placeholder: 'e.g. 85' },
+  { field: 'situpGoal', label: 'Sit-up goal (max reps)', placeholder: 'e.g. 90' },
+  { field: 'pullupGoal', label: 'Pull-up goal (max strict reps)', placeholder: 'e.g. 18' }
+]
+
 const defaultWorkoutSelection = {
   row2k: true,
   pushups: true,
@@ -422,6 +430,51 @@ function getExercisesForPlan(plan) {
   return Array.from(new Set(found))
 }
 
+function parseDurationFromText(text, fallbackSeconds = 90) {
+  const value = String(text || '').toLowerCase()
+  const minMatch = value.match(/(\d+)\s*min/)
+  if (minMatch) {
+    return Math.max(30, Number(minMatch[1]) * 60)
+  }
+
+  const secMatch = value.match(/(\d+)\s*s(?![a-z])/)
+  if (secMatch) {
+    return Math.max(20, Number(secMatch[1]))
+  }
+
+  const repMatch = value.match(/(\d+)\s*x\s*(\d+)/)
+  if (repMatch) {
+    return Math.max(45, Number(repMatch[1]) * 75)
+  }
+
+  return fallbackSeconds
+}
+
+function getNswSessionSteps(plan) {
+  if (!plan) {
+    return []
+  }
+
+  const labels = [
+    ...(plan.amSession || []),
+    ...(plan.pmSession || []),
+    ...(plan.workouts || [])
+  ]
+
+  const uniqueLabels = Array.from(new Set(labels))
+  return uniqueLabels.map((label) => {
+    const lower = String(label).toLowerCase()
+    return {
+      label,
+      seconds: parseDurationFromText(label, lower.includes('flexibility') ? 8 * 60 : 90),
+      type: lower.includes('recovery') ? 'rest' : lower.includes('warm-up') ? 'warmup' : lower.includes('cool-down') ? 'cooldown' : 'work',
+      pace: '',
+      intensity: lower.includes('chi') || lower.includes('interval') ? 'hard' : lower.includes('lsd') ? 'easy' : 'moderate',
+      isSwim: lower.includes('swim')
+    }
+  })
+}
+
 function getNswDaySession(weekInput, dayName) {
   const week = clamp(Number(weekInput) || 1, 1, NSW_TOTAL_WEEKS)
   const weekPlan = getNswWeekPlan(week)
@@ -697,6 +750,8 @@ function getDefaultGoalsState() {
   return {
     row2kGoal: '7:00',
     pushupGoal: '60',
+    situpGoal: '75',
+    pullupGoal: '15',
     plankGoal: '3:20',
     run15Goal: '11:20',
     swim450mGoal: '8:45',
@@ -1811,10 +1866,6 @@ function App() {
   const selectedLog = logs[selectedDay] || {}
   const baseline = useMemo(() => getBaseline(logs), [logs])
   const goalMetrics = useMemo(() => getGoals(goals, baseline), [goals, baseline])
-  const sessionSteps = useMemo(
-    () => getSessionSteps(selectedPlan, baseline, goalMetrics, logs, programConfig),
-    [selectedPlan, baseline, goalMetrics, logs, programConfig]
-  )
   const [sessionState, setSessionState] = useState({
     status: 'idle',
     stepIndex: 0,
@@ -1846,6 +1897,12 @@ function App() {
     }),
     [pstBaselineRun, pstBaselineSwim, pstBaselinePushups, pstBaselineSitups, pstBaselinePullups]
   )
+  const sessionSteps = useMemo(
+    () => (nswProgramActive
+      ? getNswSessionSteps(selectedPlan)
+      : getSessionSteps(selectedPlan, baseline, goalMetrics, logs, programConfig)),
+    [nswProgramActive, selectedPlan, baseline, goalMetrics, logs, programConfig]
+  )
   const dayTargets = useMemo(
     () => (nswProgramActive
       ? getNswDayCalculatedTargets(selectedPlan, nswChartTargets)
@@ -1861,10 +1918,10 @@ function App() {
   const workOrTestSteps = sessionSteps.filter((s) => s.type === 'work' || s.type === 'test')
   const isSwimDay = workOrTestSteps.length > 0 && workOrTestSteps.every((s) => s.isSwim)
   const isTestDay = selectedPlan.day === 0 || selectedPlan.day === programConfig.programDays
-  const isChecklistDay = isSwimDay || isTestDay
+  const isChecklistDay = nswProgramActive || isSwimDay || isTestDay
   const activeWorkoutItems = workoutCatalog.filter((item) => workoutEnabled(programConfig.selectedWorkouts, item.id))
   const activeWorkoutLabels = activeWorkoutItems.map((item) => item.label)
-  const allPdfExercises = Object.keys(exerciseDescriptions)
+  const allPdfExercises = useMemo(() => Object.keys(exerciseDescriptions), [])
   const todaysExercises = useMemo(() => getExercisesForPlan(selectedPlan), [selectedPlan])
   const selectedExerciseDescription = selectedExercise ? exerciseDescriptions[selectedExercise] : ''
   const baselineCoverageByWorkout = {
@@ -1998,7 +2055,12 @@ function App() {
 
   useEffect(() => {
     const nextSelection = todaysExercises[0] || allPdfExercises[0] || ''
-    setSelectedExercise(nextSelection)
+    setSelectedExercise((current) => {
+      if (current && (todaysExercises.includes(current) || allPdfExercises.includes(current))) {
+        return current
+      }
+      return nextSelection
+    })
     setShowExerciseModal(false)
   }, [selectedDay, activeProfile, todaysExercises, allPdfExercises])
 
@@ -2231,8 +2293,16 @@ function App() {
               </div>
 
               {showExerciseModal && (
-                <div className="exercise-modal-backdrop" role="presentation" onClick={() => setShowExerciseModal(false)}>
+                <div className="exercise-modal-backdrop" role="presentation">
                   <div className="exercise-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+                    <button
+                      type="button"
+                      className="exercise-modal-close"
+                      aria-label="Close exercise description"
+                      onClick={() => setShowExerciseModal(false)}
+                    >
+                      X
+                    </button>
                     <h3>{selectedExercise || 'Exercise Details'}</h3>
                     <p>{selectedExerciseDescription || 'Select an exercise to view the PDF description.'}</p>
                     <p className="subline">Source: NSW Physical Training Guide</p>
@@ -2321,64 +2391,97 @@ function App() {
 
         {activeTab === 'goals' && (
           <div className="day-details">
-            <div className="card tracker">
-              <h3>Program Setup</h3>
-              <div className="field-grid">
-                <label>
-                  Program length (days)
-                  <input
-                    type="number"
-                    min={MIN_PROGRAM_DAYS}
-                    max={MAX_PROGRAM_DAYS}
-                    step="1"
-                    value={programDaysInput}
-                    onChange={(event) => setProgramDaysInput(event.target.value)}
-                    onBlur={(event) => updateProgramDays(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        updateProgramDays(event.currentTarget.value)
-                        event.currentTarget.blur()
-                      }
-                    }}
-                    placeholder="e.g. 60"
-                  />
-                </label>
-              </div>
-              <p className="subline">Choose from {MIN_PROGRAM_DAYS} to {MAX_PROGRAM_DAYS} days.</p>
+            {nswProgramActive ? (
+              <>
+                <div className="card tracker">
+                  <h3>NSW Program Setup</h3>
+                  <p className="subline">Profile-linked: NSW 26-week plan with 182 days and Table 5 scheduling.</p>
+                  <ul>
+                    <li>Primary cardio: Run LSD/CHI/INT and Swim LSD/CHI/INT</li>
+                    <li>Strength split: Upper (Mon/Wed), Lower (Tue/Thu)</li>
+                    <li>Support work: Calisthenics and core progression by day pattern</li>
+                    <li>Flexibility: daily post-cardio routine</li>
+                  </ul>
+                </div>
 
-              <h3>Workout Selection</h3>
-              <div className="toggle-grid">
-                {workoutCatalog.map((item) => (
-                  <label key={item.id} className="check-row workout-toggle">
-                    <input
-                      type="checkbox"
-                      checked={workoutEnabled(programConfig.selectedWorkouts, item.id)}
-                      onChange={(event) => toggleWorkoutSelection(item.id, event.target.checked)}
-                    />
-                    {item.label}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="card tracker">
-              <h3>Target Goals (Day {programConfig.programDays})</h3>
-              <div className="field-grid">
-                {activeWorkoutItems.map((item) => {
-                  const goalInput = workoutGoalInputs[item.id]
-                  return (
-                    <label key={item.id}>
-                      {goalInput.label}
+                <div className="card tracker">
+                  <h3>NSW Target Goals (Week 26)</h3>
+                  <div className="field-grid">
+                    {nswGoalInputs.map((goalInput) => (
+                      <label key={goalInput.field}>
+                        {goalInput.label}
+                        <input
+                          value={goals[goalInput.field] || ''}
+                          onChange={(event) => updateGoal(goalInput.field, event.target.value)}
+                          placeholder={goalInput.placeholder}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="card tracker">
+                  <h3>Program Setup</h3>
+                  <div className="field-grid">
+                    <label>
+                      Program length (days)
                       <input
-                        value={goals[goalInput.field] || ''}
-                        onChange={(event) => updateGoal(goalInput.field, event.target.value)}
-                        placeholder={goalInput.placeholder}
+                        type="number"
+                        min={MIN_PROGRAM_DAYS}
+                        max={MAX_PROGRAM_DAYS}
+                        step="1"
+                        value={programDaysInput}
+                        onChange={(event) => setProgramDaysInput(event.target.value)}
+                        onBlur={(event) => updateProgramDays(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            updateProgramDays(event.currentTarget.value)
+                            event.currentTarget.blur()
+                          }
+                        }}
+                        placeholder="e.g. 60"
                       />
                     </label>
-                  )
-                })}
-              </div>
-            </div>
+                  </div>
+                  <p className="subline">Choose from {MIN_PROGRAM_DAYS} to {MAX_PROGRAM_DAYS} days.</p>
+
+                  <h3>Workout Selection</h3>
+                  <div className="toggle-grid">
+                    {workoutCatalog.map((item) => (
+                      <label key={item.id} className="check-row workout-toggle">
+                        <input
+                          type="checkbox"
+                          checked={workoutEnabled(programConfig.selectedWorkouts, item.id)}
+                          onChange={(event) => toggleWorkoutSelection(item.id, event.target.checked)}
+                        />
+                        {item.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="card tracker">
+                  <h3>Target Goals (Day {programConfig.programDays})</h3>
+                  <div className="field-grid">
+                    {activeWorkoutItems.map((item) => {
+                      const goalInput = workoutGoalInputs[item.id]
+                      return (
+                        <label key={item.id}>
+                          {goalInput.label}
+                          <input
+                            value={goals[goalInput.field] || ''}
+                            onChange={(event) => updateGoal(goalInput.field, event.target.value)}
+                            placeholder={goalInput.placeholder}
+                          />
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="card safety">
               <h3>Warm-up, Recovery, and Scaling</h3>
@@ -2406,7 +2509,7 @@ function App() {
 
             {isChecklistDay ? (
               <div className="card checklist-card">
-                <h3>{isSwimDay ? 'Swim Session Checklist' : 'Test Day Checklist'}</h3>
+                <h3>{nswProgramActive ? 'NSW Session Checklist' : isSwimDay ? 'Swim Session Checklist' : 'Test Day Checklist'}</h3>
                 {sessionSteps.length > 0 && sessionSteps.every((_, i) => Boolean(swimChecks[i])) && (
                   <p className="timer-complete">Session complete. Day marked as done.</p>
                 )}

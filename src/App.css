@@ -272,6 +272,17 @@ ul {
   margin-top: 0;
 }
 
+.exercise-modal-close {
+  float: right;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 8px;
+  width: 2rem;
+  height: 2rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .am-pm-grid {
   margin-top: 0.9rem;
   display: grid;
