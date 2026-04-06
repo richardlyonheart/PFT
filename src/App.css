@@ -454,6 +454,13 @@ textarea {
   color: var(--text);
 }
 
+.ghost-button.active-pill {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(210, 97, 41, 0.1);
+  font-weight: 700;
+}
+
 .ghost-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -473,7 +480,8 @@ textarea {
 @media (max-width: 950px) {
   .field-grid,
   .hero-metrics,
-  .toggle-grid {
+  .toggle-grid,
+  .nsw-calendar-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -484,12 +492,33 @@ textarea {
   left: 0;
   right: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   background: var(--panel);
   border-top: 1px solid var(--line);
   padding: 0.4rem 0 max(0.4rem, env(safe-area-inset-bottom));
   z-index: 100;
   backdrop-filter: blur(8px);
+}
+
+.nsw-card h3 {
+  margin-top: 0;
+}
+
+.nsw-option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.nsw-week-label {
+  margin: 0.4rem 0 0.8rem;
+}
+
+.nsw-calendar-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .nav-tab {

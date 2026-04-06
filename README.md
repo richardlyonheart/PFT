@@ -14,6 +14,7 @@ It includes:
 - Daily logging for row, push-ups, plank, RPE, and notes
 - Local persistence in browser storage
 - Optional Firebase cloud sync so you can use it anywhere
+- NSW special workout tab with a PDF-guided 26-week training option
 
 ## Run Locally
 
@@ -119,3 +120,17 @@ After deploy, open the Vercel URL on your phone from anywhere.
 2. Select each day from the calendar list.
 3. Log workout results and mark completion.
 4. Repeat until Day 60 and compare retest metrics to baseline.
+
+## NSW Special Workout Tab
+
+Use the NSW tab in the bottom navigation to:
+
+- Review a weekly breakdown based on the Naval Special Warfare Physical Training Guide
+- Slide through Weeks 1-26 and see LSD, CHI, interval, and strength focus for that week
+- Choose `Take 26-Week Program` and apply a full 182-day plan preset to your tracker
+
+Also included:
+
+- Dedicated `Week Cal` mode that shows a week-by-week NSW calendar from Week 1 to Week 26
+- PST interval pace calculators for run and swim using baseline times
+- Separate profile slots (`Standard` and `NSW`) so both plans can be saved and switched instantly

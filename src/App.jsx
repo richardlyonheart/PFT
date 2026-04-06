@@ -4,9 +4,12 @@ import './App.css'
 const STORAGE_KEY = 'workout-tracker-v1'
 const GOALS_KEY = 'workout-goals-v1'
 const CONFIG_KEY = 'workout-config-v1'
+const ACTIVE_PROFILE_KEY = 'workout-active-profile-v1'
 const MIN_PROGRAM_DAYS = 30
 const MAX_PROGRAM_DAYS = 360
 const DEFAULT_PROGRAM_DAYS = 60
+const DEFAULT_PROFILE = 'default'
+const NSW_PROFILE = 'nsw26'
 
 const workoutCatalog = [
   { id: 'row2k', label: 'Row 2,000m', logField: 'row' },
@@ -45,6 +48,143 @@ const defaultWorkoutSelection = {
 }
 
 const weekDayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+const NSW_TOTAL_WEEKS = 26
+
+function getNswChiPrescription(week) {
+  if (week <= 2) return '15 min continuous at 90-95% effort'
+  if (week <= 4) return '16 min continuous at 90-95% effort'
+  if (week <= 6) return '17 min continuous at 90-95% effort'
+  if (week <= 8) return '18 min continuous at 90-95% effort'
+  if (week <= 10) return '19 min continuous at 90-95% effort'
+  if (week <= 12) return '20 min continuous at 90-95% effort'
+  if (week <= 15) return '2 x 12 min at 90-95% effort (6 min easy between)'
+  if (week <= 18) return '2 x 14 min at 90-95% effort (7 min easy between)'
+  if (week <= 21) return '2 x 16 min at 90-95% effort (8 min easy between)'
+  if (week <= 24) return '2 x 18 min at 90-95% effort (9 min easy between)'
+  return '2 x 20 min at 90-95% effort (10 min easy between)'
+}
+
+function getNswIntervalReps(week) {
+  if (week <= 2) return 4
+  if (week <= 4) return 5
+  if (week <= 6) return 6
+  if (week <= 8) return 7
+  if (week <= 10) return 8
+  if (week <= 12) return 9
+  return 10
+}
+
+function getNswStrengthPrescription(week) {
+  if (week <= 12) return 'Strength split + core; calisthenics from Table 2 progression (single-set strength focus)'
+  if (week <= 15) return 'Strength split + core; push/sit/pull at 2 x 12 work sets'
+  if (week <= 18) return 'Strength split + core; push/sit/pull at 2 x 14 work sets'
+  if (week <= 21) return 'Strength split + core; push/sit/pull at 2 x 16 work sets'
+  if (week <= 24) return 'Strength split + core; push/sit/pull at 2 x 18 work sets'
+  return 'Strength split + core; push/sit/pull at 2 x 20 work sets'
+}
+
+function getNswWeekPlan(weekInput) {
+  const week = clamp(Number(weekInput) || 1, 1, NSW_TOTAL_WEEKS)
+  const runLsdMiles = Number((3 + (week - 1) * 0.25).toFixed(2))
+  const swimLsdYards = 1000 + (week - 1) * 100
+  const intervalReps = getNswIntervalReps(week)
+  const chiPrescription = getNswChiPrescription(week)
+  const strengthPrescription = getNswStrengthPrescription(week)
+
+  return {
+    week,
+    runLsdMiles,
+    swimLsdYards,
+    runIntReps: intervalReps,
+    swimIntReps: intervalReps,
+    runChi: chiPrescription,
+    swimChi: chiPrescription,
+    strength: strengthPrescription
+  }
+}
+
+function getProfileStorageKey(baseKey, profileId) {
+  return profileId === DEFAULT_PROFILE ? baseKey : `${baseKey}-${profileId}`
+}
+
+function getStoredJsonValue(key, fallbackValue) {
+  const raw = localStorage.getItem(key)
+  if (!raw) {
+    return fallbackValue
+  }
+
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return fallbackValue
+  }
+}
+
+function getDefaultGoalsState() {
+  return {
+    row2kGoal: '7:00',
+    pushupGoal: '60',
+    plankGoal: '3:20',
+    run15Goal: '11:20',
+    swim450mGoal: '8:45',
+    swim500yGoal: '9:25'
+  }
+}
+
+function getProfileSnapshot(profileId) {
+  const profileStorageKey = getProfileStorageKey(STORAGE_KEY, profileId)
+  const profileGoalsKey = getProfileStorageKey(GOALS_KEY, profileId)
+  const profileConfigKey = getProfileStorageKey(CONFIG_KEY, profileId)
+
+  const logs = getStoredJsonValue(profileStorageKey, {})
+  const goals = getStoredJsonValue(profileGoalsKey, getDefaultGoalsState())
+  const config = normalizeProgramConfig(getStoredJsonValue(profileConfigKey, {
+    programDays: DEFAULT_PROGRAM_DAYS,
+    selectedWorkouts: defaultWorkoutSelection
+  }))
+
+  let selectedDay = config.programDays
+  for (let i = 0; i <= MAX_PROGRAM_DAYS; i += 1) {
+    if (!logs[i]?.complete) {
+      selectedDay = i
+      break
+    }
+  }
+
+  return {
+    logs,
+    goals,
+    config,
+    selectedDay: clamp(selectedDay, 0, config.programDays)
+  }
+}
+
+function getPstIntervalTargets(runInput, swimInput) {
+  const runSeconds = parseTimeToSeconds(runInput)
+  const swimSeconds = parseTimeToSeconds(swimInput)
+
+  const runQuarterBase = runSeconds ? runSeconds / 6 : null
+  const runQuarterTarget = runQuarterBase ? Math.max(30, runQuarterBase - 4) : null
+  const runRecoveryLow = runQuarterTarget ? runQuarterTarget * 2 : null
+  const runRecoveryHigh = runQuarterTarget ? runQuarterTarget * 2.5 : null
+
+  const swim100Base = swimSeconds ? swimSeconds / 5 : null
+  const swim100Target = swim100Base ? Math.max(35, swim100Base - 2) : null
+  const swimRecoveryLow = swim100Target ? swim100Target * 2 : null
+  const swimRecoveryHigh = swim100Target ? swim100Target * 2.5 : null
+
+  return {
+    runQuarterBase,
+    runQuarterTarget,
+    runRecoveryLow,
+    runRecoveryHigh,
+    swim100Base,
+    swim100Target,
+    swimRecoveryLow,
+    swimRecoveryHigh
+  }
+}
 
 const dayTemplates = {
   Monday: {
@@ -813,53 +953,17 @@ function buildProgram(config) {
 }
 
 function App() {
-  const [programConfig, setProgramConfig] = useState(() => {
-    const raw = localStorage.getItem(CONFIG_KEY)
-    if (!raw) {
-      return normalizeProgramConfig({
-        programDays: DEFAULT_PROGRAM_DAYS,
-        selectedWorkouts: defaultWorkoutSelection
-      })
-    }
-
-    try {
-      return normalizeProgramConfig(JSON.parse(raw))
-    } catch {
-      return normalizeProgramConfig({
-        programDays: DEFAULT_PROGRAM_DAYS,
-        selectedWorkouts: defaultWorkoutSelection
-      })
-    }
-  })
+  const [activeProfile, setActiveProfile] = useState(() => localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE)
+  const [programConfig, setProgramConfig] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).config)
   const program = useMemo(() => buildProgram(programConfig), [programConfig])
-  const [selectedDay, setSelectedDay] = useState(() => {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    const savedLogs = raw ? JSON.parse(raw) : {}
-    for (let i = 0; i <= MAX_PROGRAM_DAYS; i += 1) {
-      if (!savedLogs[i]?.complete) return i
-    }
-    return DEFAULT_PROGRAM_DAYS
-  })
+  const [selectedDay, setSelectedDay] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).selectedDay)
   const [activeTab, setActiveTab] = useState('day')
-  const [logs, setLogs] = useState(() => {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : {}
-  })
-  const [goals, setGoals] = useState(() => {
-    const raw = localStorage.getItem(GOALS_KEY)
-    if (raw) {
-      return JSON.parse(raw)
-    }
-
-    return {
-      row2kGoal: '7:00',
-      pushupGoal: '60',
-      plankGoal: '3:20',
-      run15Goal: '11:20',
-      swim450mGoal: '8:45',
-      swim500yGoal: '9:25'
-    }
-  })
+  const [nswWeek, setNswWeek] = useState(1)
+  const [nswCalendarWeek, setNswCalendarWeek] = useState(1)
+  const [nswOption, setNswOption] = useState('preview')
+  const [logs, setLogs] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).logs)
+  const [goals, setGoals] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).goals)
+  const [pstInputs, setPstInputs] = useState({ run15: '', swim500y: '' })
   const [firebaseApi, setFirebaseApi] = useState(null)
   const [cloudStatus, setCloudStatus] = useState('Checking cloud config...')
   const [cloudUid, setCloudUid] = useState('')
@@ -870,16 +974,25 @@ function App() {
   const lastCloudPayloadRef = useRef('')
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs))
-  }, [logs])
+    localStorage.setItem(getProfileStorageKey(STORAGE_KEY, activeProfile), JSON.stringify(logs))
+  }, [logs, activeProfile])
 
   useEffect(() => {
-    localStorage.setItem(GOALS_KEY, JSON.stringify(goals))
-  }, [goals])
+    localStorage.setItem(getProfileStorageKey(GOALS_KEY, activeProfile), JSON.stringify(goals))
+  }, [goals, activeProfile])
 
   useEffect(() => {
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(programConfig))
-  }, [programConfig])
+    localStorage.setItem(getProfileStorageKey(CONFIG_KEY, activeProfile), JSON.stringify(programConfig))
+  }, [programConfig, activeProfile])
+
+  useEffect(() => {
+    localStorage.setItem(ACTIVE_PROFILE_KEY, activeProfile)
+    const snapshot = getProfileSnapshot(activeProfile)
+    setLogs(snapshot.logs)
+    setGoals(snapshot.goals)
+    setProgramConfig(snapshot.config)
+    setSelectedDay(snapshot.selectedDay)
+  }, [activeProfile])
 
   useEffect(() => {
     setSelectedDay((current) => clamp(current, 0, programConfig.programDays))
@@ -1046,7 +1159,7 @@ function App() {
       return undefined
     }
 
-    const documentRef = firebaseApi.doc(firebaseApi.db, 'users', cloudUid, 'appData', 'workoutTracker')
+    const documentRef = firebaseApi.doc(firebaseApi.db, 'users', cloudUid, 'appData', `workoutTracker-${activeProfile}`)
     const unsubscribe = firebaseApi.onSnapshot(
       documentRef,
       (snapshot) => {
@@ -1087,7 +1200,7 @@ function App() {
     )
 
     return unsubscribe
-  }, [cloudUid, firebaseApi])
+  }, [cloudUid, firebaseApi, activeProfile])
 
   useEffect(() => {
     if (!firebaseApi?.db || !cloudUid || applyingRemoteRef.current) {
@@ -1100,7 +1213,7 @@ function App() {
     }
 
     lastCloudPayloadRef.current = payload
-    const documentRef = firebaseApi.doc(firebaseApi.db, 'users', cloudUid, 'appData', 'workoutTracker')
+    const documentRef = firebaseApi.doc(firebaseApi.db, 'users', cloudUid, 'appData', `workoutTracker-${activeProfile}`)
     firebaseApi.setDoc(
       documentRef,
       {
@@ -1113,7 +1226,7 @@ function App() {
     ).catch(() => {
       setCloudStatus('Cloud write failed, using local mode')
     })
-  }, [logs, goals, programConfig, cloudUid, firebaseApi])
+  }, [logs, goals, programConfig, cloudUid, firebaseApi, activeProfile])
 
   const completeCount = Object.values(logs).filter((log) => log.complete).length
   const selectedPlan = program.find((item) => item.day === selectedDay) || program[program.length - 1]
@@ -1135,6 +1248,23 @@ function App() {
     () => getDailyPrescription(selectedPlan, baseline, goalMetrics, programConfig),
     [selectedPlan, baseline, goalMetrics, programConfig]
   )
+  const nswWeekPlan = useMemo(() => getNswWeekPlan(nswWeek), [nswWeek])
+  const nswCalendarPlan = useMemo(
+    () => Array.from({ length: NSW_TOTAL_WEEKS }, (_, index) => getNswWeekPlan(index + 1)),
+    []
+  )
+  const selectedNswCalendarWeek = nswCalendarPlan[nswCalendarWeek - 1] || nswCalendarPlan[0]
+  const pstBaselineRun = pstInputs.run15 || logs[0]?.run15 || ''
+  const pstBaselineSwim = pstInputs.swim500y || logs[0]?.swim500y || ''
+  const pstTargets = useMemo(
+    () => getPstIntervalTargets(pstBaselineRun, pstBaselineSwim),
+    [pstBaselineRun, pstBaselineSwim]
+  )
+  const nswPlanApplied =
+    activeProfile === NSW_PROFILE &&
+    programConfig.programDays === 182 &&
+    workoutEnabled(programConfig.selectedWorkouts, 'run15') &&
+    workoutEnabled(programConfig.selectedWorkouts, 'swim500y')
   const currentStep = sessionSteps[sessionState.stepIndex]
   const workOrTestSteps = sessionSteps.filter((s) => s.type === 'work' || s.type === 'test')
   const isSwimDay = workOrTestSteps.length > 0 && workOrTestSteps.every((s) => s.isSwim)
@@ -1200,6 +1330,27 @@ function App() {
     setActiveTab('day')
   }
 
+  const applyNsw26WeekProgram = () => {
+    setActiveProfile(NSW_PROFILE)
+    setProgramConfig(() => normalizeProgramConfig({
+      programDays: 182,
+      selectedWorkouts: {
+        row2k: false,
+        pushups: true,
+        plank: true,
+        run15: true,
+        swim450m: false,
+        swim500y: true
+      }
+    }))
+    setSelectedDay(0)
+    setActiveTab('calendar')
+  }
+
+  const switchProfile = (profileId) => {
+    setActiveProfile(profileId)
+  }
+
   const startOrPauseWorkout = () => {
     setSessionState((current) => {
       if (current.status === 'running') {
@@ -1253,6 +1404,13 @@ function App() {
   useEffect(() => {
     setProgramDaysInput(String(programConfig.programDays))
   }, [programConfig.programDays])
+
+  useEffect(() => {
+    setPstInputs({
+      run15: logs[0]?.run15 || '',
+      swim500y: logs[0]?.swim500y || ''
+    })
+  }, [activeProfile])
 
   useEffect(() => {
     if (sessionState.status !== 'running') {
@@ -1355,6 +1513,15 @@ function App() {
             <strong>{programConfig.programDays}</strong>
             <span>total days</span>
           </div>
+        </div>
+        <div className="goal-inline">
+          <span>Profile: {activeProfile === NSW_PROFILE ? 'NSW 26-week slot' : 'Standard slot'}</span>
+          <button type="button" className="hero-button" onClick={() => switchProfile(DEFAULT_PROFILE)}>
+            Standard Profile
+          </button>
+          <button type="button" className="hero-button hero-button-alt" onClick={() => switchProfile(NSW_PROFILE)}>
+            NSW Profile
+          </button>
         </div>
       </header>
 
@@ -1614,6 +1781,156 @@ function App() {
             )}
           </div>
         )}
+
+        {activeTab === 'nsw' && (
+          <div className="day-details">
+            <div className="card nsw-card">
+              <p className="phase-tag">Naval Special Warfare</p>
+              <h2>Special Workout Tab</h2>
+              <p className="subline">Built from the NSW Physical Training Guide with optional 26-week track.</p>
+              <ul>
+                <li>Weekly layout follows LSD, CHI, and interval work for both run and swim.</li>
+                <li>Strength/core stays in a split routine with calisthenics progression.</li>
+                <li>Warm-up, cool-down, and daily flexibility are required every week.</li>
+                <li>Sunday remains recovery/mobility focused.</li>
+              </ul>
+            </div>
+
+            <div className="card nsw-card">
+              <h3>26-Week Plan Option</h3>
+              <div className="nsw-option-row">
+                <button
+                  type="button"
+                  className={`ghost-button ${nswOption === 'preview' ? 'active-pill' : ''}`}
+                  onClick={() => setNswOption('preview')}
+                >
+                  Preview Only
+                </button>
+                <button
+                  type="button"
+                  className={`ghost-button ${nswOption === 'take26' ? 'active-pill' : ''}`}
+                  onClick={() => setNswOption('take26')}
+                >
+                  Take 26-Week Program
+                </button>
+              </div>
+              {nswOption === 'take26' && (
+                <>
+                  <p className="subline">
+                    Applies a 182-day plan with run + swim + push-ups + plank selected.
+                  </p>
+                  <button type="button" className="action-button" onClick={applyNsw26WeekProgram}>
+                    Apply NSW 26-Week Program
+                  </button>
+                  {nswPlanApplied && <p className="timer-complete">NSW 26-week config is active.</p>}
+                </>
+              )}
+            </div>
+
+            <div className="card nsw-card">
+              <h3>PST Interval Pace Calculator</h3>
+              <p className="subline">Uses the guide formula: run 400m repeats at about 4s faster than base pace, swim 100y at about 2s faster.</p>
+              <div className="field-grid">
+                <label>
+                  1.5 mile baseline
+                  <input
+                    value={pstInputs.run15}
+                    onChange={(event) => setPstInputs((current) => ({ ...current, run15: event.target.value }))}
+                    placeholder="e.g. 10:30"
+                  />
+                </label>
+                <label>
+                  500y swim baseline
+                  <input
+                    value={pstInputs.swim500y}
+                    onChange={(event) => setPstInputs((current) => ({ ...current, swim500y: event.target.value }))}
+                    placeholder="e.g. 10:30"
+                  />
+                </label>
+              </div>
+              <ul>
+                <li>
+                  Run 400m base pace: {pstTargets.runQuarterBase ? formatSeconds(pstTargets.runQuarterBase) : 'enter 1.5 mile time'}
+                </li>
+                <li>
+                  Run 400m interval target: {pstTargets.runQuarterTarget ? formatSeconds(pstTargets.runQuarterTarget) : 'enter 1.5 mile time'}
+                </li>
+                <li>
+                  Run recovery: {pstTargets.runRecoveryLow ? `${formatSeconds(pstTargets.runRecoveryLow)} to ${formatSeconds(pstTargets.runRecoveryHigh)}` : 'enter 1.5 mile time'}
+                </li>
+                <li>
+                  Swim 100y base pace: {pstTargets.swim100Base ? formatSeconds(pstTargets.swim100Base) : 'enter 500y swim time'}
+                </li>
+                <li>
+                  Swim 100y interval target: {pstTargets.swim100Target ? formatSeconds(pstTargets.swim100Target) : 'enter 500y swim time'}
+                </li>
+                <li>
+                  Swim recovery: {pstTargets.swimRecoveryLow ? `${formatSeconds(pstTargets.swimRecoveryLow)} to ${formatSeconds(pstTargets.swimRecoveryHigh)}` : 'enter 500y swim time'}
+                </li>
+              </ul>
+            </div>
+
+            <div className="card nsw-card">
+              <h3>Weekly Breakdown (Week {nswWeekPlan.week})</h3>
+              <label className="nsw-week-label">
+                Select week (1-26)
+                <input
+                  type="range"
+                  min="1"
+                  max={String(NSW_TOTAL_WEEKS)}
+                  value={nswWeekPlan.week}
+                  onChange={(event) => setNswWeek(Number(event.target.value))}
+                />
+              </label>
+              <ul>
+                <li>Monday: Run LSD {nswWeekPlan.runLsdMiles} miles + upper body/core</li>
+                <li>Tuesday: Swim CHI {nswWeekPlan.swimChi} + lower body + push/sit/pull</li>
+                <li>Wednesday: Run intervals {nswWeekPlan.runIntReps} x 400m + core + push/sit/pull</li>
+                <li>Thursday: Swim LSD {nswWeekPlan.swimLsdYards} yards + core + push/sit/pull</li>
+                <li>Friday: Run CHI {nswWeekPlan.runChi} + upper body/core</li>
+                <li>Saturday: Swim intervals {nswWeekPlan.swimIntReps} x 100y + lower body + push/sit/pull</li>
+                <li>Sunday: Mobility, flexibility, and recovery only</li>
+              </ul>
+              <p className="subline">Strength/calisthenics focus this block: {nswWeekPlan.strength}</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'nswCalendar' && (
+          <div className="day-details">
+            <div className="card nsw-card">
+              <h3>NSW 26-Week Calendar Mode</h3>
+              <p className="subline">Dedicated week-based view for the full NSW schedule.</p>
+              <div className="nsw-calendar-grid">
+                {nswCalendarPlan.map((item) => (
+                  <button
+                    key={item.week}
+                    type="button"
+                    className={`day-chip ${item.week === selectedNswCalendarWeek.week ? 'active' : ''}`}
+                    onClick={() => setNswCalendarWeek(item.week)}
+                  >
+                    <span>Week {item.week}</span>
+                    <small>Run LSD {item.runLsdMiles} mi · Swim LSD {item.swimLsdYards} yd</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="card nsw-card">
+              <p className="phase-tag">Week {selectedNswCalendarWeek.week}</p>
+              <h3>Weekly Session Plan</h3>
+              <ul>
+                <li>Monday: Run LSD {selectedNswCalendarWeek.runLsdMiles} miles + upper/core</li>
+                <li>Tuesday: Swim CHI {selectedNswCalendarWeek.swimChi} + lower + push/sit/pull</li>
+                <li>Wednesday: Run intervals {selectedNswCalendarWeek.runIntReps} x 400m + core + push/sit/pull</li>
+                <li>Thursday: Swim LSD {selectedNswCalendarWeek.swimLsdYards} yards + core + push/sit/pull</li>
+                <li>Friday: Run CHI {selectedNswCalendarWeek.runChi} + upper/core</li>
+                <li>Saturday: Swim intervals {selectedNswCalendarWeek.swimIntReps} x 100y + lower + push/sit/pull</li>
+                <li>Sunday: Recovery + flexibility only</li>
+              </ul>
+              <p className="subline">Calisthenics/strength progression: {selectedNswCalendarWeek.strength}</p>
+            </div>
+          </div>
+        )}
       </main>
 
       <nav className="bottom-nav">
@@ -1648,6 +1965,22 @@ function App() {
         >
           <span className="nav-icon">⏱</span>
           <span>Timer</span>
+        </button>
+        <button
+          type="button"
+          className={`nav-tab ${activeTab === 'nsw' ? 'active' : ''}`}
+          onClick={() => setActiveTab('nsw')}
+        >
+          <span className="nav-icon">N</span>
+          <span>NSW</span>
+        </button>
+        <button
+          type="button"
+          className={`nav-tab ${activeTab === 'nswCalendar' ? 'active' : ''}`}
+          onClick={() => setActiveTab('nswCalendar')}
+        >
+          <span className="nav-icon">W</span>
+          <span>Week Cal</span>
         </button>
       </nav>
     </div>
