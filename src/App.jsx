@@ -730,6 +730,47 @@ function buildNswProgram() {
   return plan
 }
 
+function buildTrxProgram() {
+  const plan = [
+    {
+      day: 0,
+      phase: 'TRX Prep',
+      week: 0,
+      dayName: 'Prep Day',
+      title: 'TRX Program Setup + Baseline',
+      workouts: [
+        'TRX setup: Ensure straps are properly anchored and adjusted',
+        'Bodyweight assessment: Test basic movements without TRX',
+        'Mobility check: Assess shoulder and core mobility',
+        'Review program structure and safety guidelines'
+      ],
+      notes: [
+        'Start with shorter strap lengths for beginners',
+        'Focus on proper form over weight/resistance',
+        'Consult a physician before beginning if you have shoulder issues'
+      ]
+    }
+  ]
+
+  // Use the TRX program generator with default settings (core focus, 28 days)
+  const trxDays = getTrxProgramDays('core', 28)
+  
+  trxDays.forEach(dayData => {
+    plan.push({
+      day: dayData.day,
+      phase: dayData.phase,
+      week: dayData.week,
+      dayName: dayData.dayName,
+      title: dayData.title,
+      workouts: dayData.workouts,
+      exercises: dayData.exercises,
+      notes: []
+    })
+  })
+
+  return plan
+}
+
 // TRX Exercise Catalog
 const trxExercises = {
   core: [
@@ -1010,7 +1051,7 @@ function getProfileSnapshot(profileId) {
   const logs = getStoredJsonValue(profileStorageKey, {})
   const goals = getStoredJsonValue(profileGoalsKey, getDefaultGoalsState())
   const config = normalizeProgramConfig(getStoredJsonValue(profileConfigKey, {
-    programDays: DEFAULT_PROGRAM_DAYS,
+    programDays: profileId === NSW_PROFILE ? 182 : profileId === TRX_PROFILE ? 28 : DEFAULT_PROGRAM_DAYS,
     selectedWorkouts: defaultWorkoutSelection
   }))
 
@@ -1840,10 +1881,11 @@ function buildProgram(config) {
 function App() {
   const [activeProfile, setActiveProfile] = useState(() => localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE)
   const [programConfig, setProgramConfig] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).config)
-  const nswProgramActive = activeProfile === NSW_PROFILE && programConfig.programDays === 182
+  const nswProgramActive = activeProfile === NSW_PROFILE
+  const trxProgramActive = activeProfile === TRX_PROFILE
   const program = useMemo(
-    () => (nswProgramActive ? buildNswProgram() : buildProgram(programConfig)),
-    [nswProgramActive, programConfig]
+    () => (nswProgramActive ? buildNswProgram() : trxProgramActive ? buildTrxProgram() : buildProgram(programConfig)),
+    [nswProgramActive, trxProgramActive, programConfig]
   )
   const [selectedDay, setSelectedDay] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).selectedDay)
   const [activeTab, setActiveTab] = useState('day')
@@ -2194,14 +2236,13 @@ function App() {
   const selectedTrxPlan = trxProgram.find((item) => item.day === selectedTrxDay) || trxProgram[0] || {}
   const nswPlanApplied =
     activeProfile === NSW_PROFILE &&
-    programConfig.programDays === 182 &&
     workoutEnabled(programConfig.selectedWorkouts, 'run15') &&
     workoutEnabled(programConfig.selectedWorkouts, 'swim500y')
   const currentStep = sessionSteps[sessionState.stepIndex]
   const workOrTestSteps = sessionSteps.filter((s) => s.type === 'work' || s.type === 'test')
   const isSwimDay = workOrTestSteps.length > 0 && workOrTestSteps.every((s) => s.isSwim)
   const isTestDay = selectedPlan.day === 0 || selectedPlan.day === programConfig.programDays
-  const isChecklistDay = nswProgramActive || isSwimDay || isTestDay
+  const isChecklistDay = nswProgramActive || trxProgramActive || isSwimDay || isTestDay
   const activeWorkoutItems = workoutCatalog.filter((item) => workoutEnabled(programConfig.selectedWorkouts, item.id))
   const heroProgramTitle = activeProfile === NSW_PROFILE ? 'NSW Training Program' : activeProfile === TRX_PROFILE ? 'TRX Training Program' : 'PFT Training Program'
   const allPdfExercises = useMemo(() => Object.keys(exerciseDescriptions), [])
@@ -2217,8 +2258,8 @@ function App() {
           .map((entry) => entry.key)
       })
 
-    // Add TRX exercises when TRX tab is active
-    const trxExercises = activeTab === 'trx' ? 
+    // Add TRX exercises when TRX tab is active or TRX profile is active
+    const trxExercises = (activeTab === 'trx' || trxProgramActive) ? 
       Object.values(trxExercises).flat().map(ex => ex.name) : []
 
     return Array.from(new Set([...fromPlan, ...fromSteps, ...trxExercises]))
@@ -2993,7 +3034,7 @@ function App() {
 
             {isChecklistDay ? (
               <div className="card checklist-card">
-                <h3>{nswProgramActive ? 'NSW Session Checklist' : isSwimDay ? 'Swim Session Checklist' : 'Test Day Checklist'}</h3>
+                <h3>{nswProgramActive ? 'NSW Session Checklist' : trxProgramActive ? 'TRX Session Checklist' : isSwimDay ? 'Swim Session Checklist' : 'Test Day Checklist'}</h3>
                 {sessionSteps.length > 0 && sessionSteps.every((_, i) => Boolean(swimChecks[i])) && (
                   <p className="timer-complete">Session complete. Day marked as done.</p>
                 )}
