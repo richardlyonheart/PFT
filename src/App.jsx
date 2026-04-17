@@ -2739,7 +2739,7 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'day' && (
+        {activeTab === 'day' && selectedPlan && (
           <div className="day-details">
             <div className="card">
               <p className="phase-tag">{selectedPlan.phase}</p>
@@ -2771,26 +2771,63 @@ function App() {
 
               <ul>
                 {selectedPlan.workouts.map((work, index) => {
-                  // Check if this workout contains a TRX exercise
-                  const trxExerciseMatch = work.match(/^(.+?TRX .+?):\s*(.+)$/)
-                  if (trxExerciseMatch) {
-                    const [, exerciseName, details] = trxExerciseMatch
-                    return (
-                      <li key={index}>
-                        <button
-                          type="button"
-                          className="exercise-link"
-                          onClick={() => {
-                            setSelectedExercise(exerciseName.trim())
-                            setShowExerciseModal(true)
-                          }}
-                        >
-                          {exerciseName}
-                        </button>
-                        : {details}
-                      </li>
-                    )
+                  // Check if this workout contains an exercise with a description
+                  const exerciseMatch = work.match(/^(.+?):\s*(.+)$/)
+                  if (exerciseMatch) {
+                    const [, exerciseName, details] = exerciseMatch
+                    const trimmedName = exerciseName.trim()
+                    // Check if this exercise has a description
+                    if (exerciseDescriptions[trimmedName]) {
+                      return (
+                        <li key={index}>
+                          <button
+                            type="button"
+                            className="exercise-link"
+                            onClick={() => {
+                              setSelectedExercise(trimmedName)
+                              setShowExerciseModal(true)
+                            }}
+                          >
+                            {trimmedName}
+                          </button>
+                          : {details}
+                        </li>
+                      )
+                    }
                   }
+
+                  // Check for exercises mentioned anywhere in the workout text
+                  // Try multi-word matches first, then single words
+                  const exerciseKeys = Object.keys(exerciseDescriptions)
+                  for (const exerciseKey of exerciseKeys) {
+                    if (work.toLowerCase().includes(exerciseKey.toLowerCase())) {
+                      // Replace the exercise name with a clickable button
+                      const parts = work.split(new RegExp(`(${exerciseKey})`, 'gi'))
+                      return (
+                        <li key={index}>
+                          {parts.map((part, partIndex) => {
+                            if (exerciseDescriptions[part]) {
+                              return (
+                                <button
+                                  key={partIndex}
+                                  type="button"
+                                  className="exercise-link"
+                                  onClick={() => {
+                                    setSelectedExercise(part)
+                                    setShowExerciseModal(true)
+                                  }}
+                                >
+                                  {part}
+                                </button>
+                              )
+                            }
+                            return part
+                          })}
+                        </li>
+                      )
+                    }
+                  }
+
                   return <li key={index}>{work}</li>
                 })}
               </ul>
@@ -2800,9 +2837,63 @@ function App() {
                   <div className="am-pm-card">
                     <h3>AM Session</h3>
                     <ul>
-                      {(selectedPlan.amSession || []).map((item, index) => (
-                        <li key={`am-${index}`}>{item}</li>
-                      ))}
+                      {(selectedPlan.amSession || []).map((item, index) => {
+                        // Check if this item contains an exercise with a description
+                        const exerciseMatch = item.match(/^(.+?):\s*(.+)$/)
+                        if (exerciseMatch) {
+                          const [, exerciseName, details] = exerciseMatch
+                          const trimmedName = exerciseName.trim()
+                          if (exerciseDescriptions[trimmedName]) {
+                            return (
+                              <li key={`am-${index}`}>
+                                <button
+                                  type="button"
+                                  className="exercise-link"
+                                  onClick={() => {
+                                    setSelectedExercise(trimmedName)
+                                    setShowExerciseModal(true)
+                                  }}
+                                >
+                                  {trimmedName}
+                                </button>
+                                : {details}
+                              </li>
+                            )
+                          }
+                        }
+
+                        // Check for exercises mentioned anywhere in the item text
+                        const exerciseKeys = Object.keys(exerciseDescriptions)
+                        for (const exerciseKey of exerciseKeys) {
+                          if (item.toLowerCase().includes(exerciseKey.toLowerCase())) {
+                            const parts = item.split(new RegExp(`(${exerciseKey})`, 'gi'))
+                            return (
+                              <li key={`am-${index}`}>
+                                {parts.map((part, partIndex) => {
+                                  if (exerciseDescriptions[part]) {
+                                    return (
+                                      <button
+                                        key={partIndex}
+                                        type="button"
+                                        className="exercise-link"
+                                        onClick={() => {
+                                          setSelectedExercise(part)
+                                          setShowExerciseModal(true)
+                                        }}
+                                      >
+                                        {part}
+                                      </button>
+                                    )
+                                  }
+                                  return part
+                                })}
+                              </li>
+                            )
+                          }
+                        }
+
+                        return <li key={`am-${index}`}>{item}</li>
+                      })}
                     </ul>
                   </div>
                   <div className="am-pm-card">
@@ -2914,6 +3005,15 @@ function App() {
                 />
                 Mark day complete
               </label>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'day' && !selectedPlan && (
+          <div className="day-details">
+            <div className="card">
+              <h2>Loading program...</h2>
+              <p>If this message persists, try refreshing the page or switching profiles.</p>
             </div>
           </div>
         )}
