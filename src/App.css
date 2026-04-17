@@ -579,6 +579,21 @@ textarea {
   cursor: not-allowed;
 }
 
+.exercise-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.exercise-link:hover {
+  color: var(--accent-dark);
+}
+
 @keyframes rise {
   from {
     opacity: 0;

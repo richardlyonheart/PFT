@@ -374,7 +374,37 @@ const exerciseDescriptions = {
   'Heel Raise': 'Calf-strength movement supporting running and swimming propulsion mechanics.',
   'Flexibility': 'Daily post-cardio stretching while tissues are warm to maintain mobility and reduce injury risk.',
   'Warm-up': 'Gradual 5-15 minute prep increasing heart rate and breathing, including short bursts before high-intensity sessions.',
-  'Cool-down': 'Easy movement after training until breathing and heart rate return closer to resting levels.'
+  'Cool-down': 'Easy movement after training until breathing and heart rate return closer to resting levels.',
+  // TRX Exercises
+  'TRX Plank': 'Hold your body in a straight line from head to heels with forearms on the ground and feet suspended in TRX straps. Keep your core tight and hips level. Hold for the prescribed time.',
+  'TRX Pike': 'Start in a plank position with feet in TRX straps. Drive your hips up toward the ceiling while keeping your legs straight, forming an inverted V shape. Lower back down with control.',
+  'TRX Crunch': 'Hold TRX straps and lean back slightly. Bring your knees toward your chest while keeping your core engaged. Focus on using your abs, not momentum.',
+  'TRX Side Plank': 'Hold one TRX strap and get into a side plank position with your feet stacked. Keep your body in a straight line and core engaged. Hold for the prescribed time per side.',
+  'TRX Fallout': 'Start standing holding TRX straps. Walk your hands forward while keeping your core tight and body straight. Go until you feel tension in your core, then walk back to start.',
+  'TRX Body Saw': 'Start in a plank position with feet in TRX straps. Keeping your core tight, move your body forward and backward by extending and flexing your arms.',
+  'TRX Push-up': 'Place feet in TRX straps and get into a push-up position. Lower your chest toward the ground while keeping your body straight, then push back up. Adjust foot height for difficulty.',
+  'TRX Chest Press': 'Face away from the anchor point holding TRX straps. Lean forward and lower your body by bending your elbows, then push back to start position. Keep your body straight.',
+  'TRX Atomic Push-up': 'Start in a push-up position with feet in TRX straps. Perform a push-up, then at the top pull your knees to your chest, then extend back out. Advanced full-body exercise.',
+  'TRX Wide Chest Press': 'Similar to chest press but with hands positioned wider. Face away from anchor, lean forward with wide grip, lower body by bending elbows, then press back up.',
+  'TRX Row': 'Face the anchor point holding TRX straps. Lean back with arms extended, then pull your body toward the anchor by bending your elbows. Keep your body straight.',
+  'TRX Face Pull': 'Face the anchor point with TRX straps at face height. Pull your body toward the anchor while keeping elbows high, targeting rear shoulders and upper back.',
+  'TRX Low Row': 'Face the anchor with TRX straps low. Lean back and pull your body up by driving elbows back, keeping them close to your sides. Focus on mid-back.',
+  'TRX High Row': 'Face the anchor with TRX straps high. Lean back and pull your body up while keeping elbows high, targeting upper back and rear shoulders.',
+  'TRX Suspension Pull': 'Start standing facing away from anchor. Lower into a squat position, then pull your body up while straightening your legs. Advanced compound movement.',
+  'TRX Assisted Squat': 'Hold TRX straps and stand with feet shoulder-width apart. Use the straps for balance and assistance as you lower into a squat, then stand back up.',
+  'TRX Lunge': 'Hold TRX straps for balance. Step forward into a lunge position, lowering until both knees are bent at 90 degrees. Push back to start and alternate legs.',
+  'TRX Single Leg Squat': 'Hold TRX straps and balance on one leg. Lower into a single-leg squat while keeping the other leg extended. Use straps for minimal assistance.',
+  'TRX Hamstring Curl': 'Lie on your back with heels in TRX straps. Lift your hips and pull your heels toward your glutes by bending your knees, then extend back out.',
+  'TRX Bridge': 'Lie on your back with feet in TRX straps. Lift your hips toward the ceiling while keeping your shoulders on the ground, then lower back down.',
+  'TRX Lateral Lunge': 'Hold TRX straps and step sideways into a lunge. Lower your body until the lunging knee is bent at 90 degrees, then push back to center and alternate sides.',
+  'TRX Bicep Curl': 'Face the anchor point holding TRX straps with palms facing up. Lean back slightly and curl your body up by bending your elbows, then lower back down.',
+  'TRX Tricep Extension': 'Face away from the anchor holding TRX straps overhead. Lower your body by extending your arms, then pull back up using your triceps.',
+  'TRX Overhead Extension': 'Hold TRX straps overhead with arms extended. Lower your body by bending your elbows, keeping them close to your head, then extend back up.',
+  'TRX Atomic Bicep': 'Start in a plank position with feet in TRX straps. Perform a bicep curl by pulling your body up, then lower back down. Advanced core and arm exercise.',
+  'TRX Y-Fly': 'Face the anchor point holding TRX straps. Lean back and raise your arms overhead in a Y shape, then lower back down. Focus on shoulder blade retraction.',
+  'TRX W-Raise': 'Face the anchor holding TRX straps. Lean back and raise your arms out to the sides in a W shape, squeezing your shoulder blades together.',
+  'TRX Lateral Raise': 'Face the anchor holding TRX straps. Lean back and raise your arms out to the sides, keeping them straight, then lower back down.',
+  'TRX Reverse Fly': 'Face the anchor holding TRX straps. Lean back and pull your arms apart horizontally, focusing on rear shoulder development.'
 }
 
 const exerciseKeywordMap = [
@@ -774,45 +804,45 @@ function buildTrxProgram() {
 // TRX Exercise Catalog
 const trxExercises = {
   core: [
-    { id: 'trx-plank', name: 'TRX Plank', difficulty: 'intermediate', duration: '30-60 sec', rest: '60 sec' },
-    { id: 'trx-pike', name: 'TRX Pike', difficulty: 'advanced', duration: '8-15 reps', rest: '60 sec' },
-    { id: 'trx-crunch', name: 'TRX Crunch', difficulty: 'intermediate', duration: '10-20 reps', rest: '45 sec' },
-    { id: 'trx-side-plank', name: 'TRX Side Plank', difficulty: 'intermediate', duration: '20-40 sec', rest: '45 sec' },
-    { id: 'trx-fallout', name: 'TRX Fallout', difficulty: 'advanced', duration: '8-12 reps', rest: '60 sec' },
-    { id: 'trx-body-saw', name: 'TRX Body Saw', difficulty: 'advanced', duration: '10-20 reps', rest: '60 sec' }
+    { id: 'trx-plank', name: 'TRX Plank', difficulty: 'intermediate', duration: '30-60 sec', rest: '60 sec', description: 'Hold your body in a straight line from head to heels with forearms on the ground and feet suspended in TRX straps. Keep your core tight and hips level. Hold for the prescribed time.' },
+    { id: 'trx-pike', name: 'TRX Pike', difficulty: 'advanced', duration: '8-15 reps', rest: '60 sec', description: 'Start in a plank position with feet in TRX straps. Drive your hips up toward the ceiling while keeping your legs straight, forming an inverted V shape. Lower back down with control.' },
+    { id: 'trx-crunch', name: 'TRX Crunch', difficulty: 'intermediate', duration: '10-20 reps', rest: '45 sec', description: 'Hold TRX straps and lean back slightly. Bring your knees toward your chest while keeping your core engaged. Focus on using your abs, not momentum.' },
+    { id: 'trx-side-plank', name: 'TRX Side Plank', difficulty: 'intermediate', duration: '20-40 sec', rest: '45 sec', description: 'Hold one TRX strap and get into a side plank position with your feet stacked. Keep your body in a straight line and core engaged. Hold for the prescribed time per side.' },
+    { id: 'trx-fallout', name: 'TRX Fallout', difficulty: 'advanced', duration: '8-12 reps', rest: '60 sec', description: 'Start standing holding TRX straps. Walk your hands forward while keeping your core tight and body straight. Go until you feel tension in your core, then walk back to start.' },
+    { id: 'trx-body-saw', name: 'TRX Body Saw', difficulty: 'advanced', duration: '10-20 reps', rest: '60 sec', description: 'Start in a plank position with feet in TRX straps. Keeping your core tight, move your body forward and backward by extending and flexing your arms.' }
   ],
   chest: [
-    { id: 'trx-push-up', name: 'TRX Push-up', difficulty: 'beginner', duration: '8-15 reps', rest: '60 sec' },
-    { id: 'trx-chest-press', name: 'TRX Chest Press', difficulty: 'beginner', duration: '10-15 reps', rest: '60 sec' },
-    { id: 'trx-atomic-push-up', name: 'TRX Atomic Push-up', difficulty: 'advanced', duration: '5-10 reps', rest: '90 sec' },
-    { id: 'trx-wide-chest-press', name: 'TRX Wide Chest Press', difficulty: 'intermediate', duration: '8-12 reps', rest: '60 sec' }
+    { id: 'trx-push-up', name: 'TRX Push-up', difficulty: 'beginner', duration: '8-15 reps', rest: '60 sec', description: 'Place feet in TRX straps and get into a push-up position. Lower your chest toward the ground while keeping your body straight, then push back up. Adjust foot height for difficulty.' },
+    { id: 'trx-chest-press', name: 'TRX Chest Press', difficulty: 'beginner', duration: '10-15 reps', rest: '60 sec', description: 'Face away from the anchor point holding TRX straps. Lean forward and lower your body by bending your elbows, then push back to start position. Keep your body straight.' },
+    { id: 'trx-atomic-push-up', name: 'TRX Atomic Push-up', difficulty: 'advanced', duration: '5-10 reps', rest: '90 sec', description: 'Start in a push-up position with feet in TRX straps. Perform a push-up, then at the top pull your knees to your chest, then extend back out. Advanced full-body exercise.' },
+    { id: 'trx-wide-chest-press', name: 'TRX Wide Chest Press', difficulty: 'intermediate', duration: '8-12 reps', rest: '60 sec', description: 'Similar to chest press but with hands positioned wider. Face away from anchor, lean forward with wide grip, lower body by bending elbows, then press back up.' }
   ],
   back: [
-    { id: 'trx-row', name: 'TRX Row', difficulty: 'beginner', duration: '8-15 reps', rest: '60 sec' },
-    { id: 'trx-face-pull', name: 'TRX Face Pull', difficulty: 'beginner', duration: '12-18 reps', rest: '45 sec' },
-    { id: 'trx-low-row', name: 'TRX Low Row', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec' },
-    { id: 'trx-high-row', name: 'TRX High Row', difficulty: 'beginner', duration: '10-15 reps', rest: '60 sec' },
-    { id: 'trx-suspension-pull', name: 'TRX Suspension Pull', difficulty: 'advanced', duration: '5-12 reps', rest: '90 sec' }
+    { id: 'trx-row', name: 'TRX Row', difficulty: 'beginner', duration: '8-15 reps', rest: '60 sec', description: 'Face the anchor point holding TRX straps. Lean back with arms extended, then pull your body toward the anchor by bending your elbows. Keep your body straight.' },
+    { id: 'trx-face-pull', name: 'TRX Face Pull', difficulty: 'beginner', duration: '12-18 reps', rest: '45 sec', description: 'Face the anchor point with TRX straps at face height. Pull your body toward the anchor while keeping elbows high, targeting rear shoulders and upper back.' },
+    { id: 'trx-low-row', name: 'TRX Low Row', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec', description: 'Face the anchor with TRX straps low. Lean back and pull your body up by driving elbows back, keeping them close to your sides. Focus on mid-back.' },
+    { id: 'trx-high-row', name: 'TRX High Row', difficulty: 'beginner', duration: '10-15 reps', rest: '60 sec', description: 'Face the anchor with TRX straps high. Lean back and pull your body up while keeping elbows high, targeting upper back and rear shoulders.' },
+    { id: 'trx-suspension-pull', name: 'TRX Suspension Pull', difficulty: 'advanced', duration: '5-12 reps', rest: '90 sec', description: 'Start standing facing away from anchor. Lower into a squat position, then pull your body up while straightening your legs. Advanced compound movement.' }
   ],
   legs: [
-    { id: 'trx-squat', name: 'TRX Assisted Squat', difficulty: 'beginner', duration: '12-18 reps', rest: '60 sec' },
-    { id: 'trx-lunge', name: 'TRX Lunge', difficulty: 'intermediate', duration: '10-12 reps', rest: '60 sec' },
-    { id: 'trx-single-leg-squat', name: 'TRX Single Leg Squat', difficulty: 'advanced', duration: '6-10 reps', rest: '90 sec' },
-    { id: 'trx-hamstring-curl', name: 'TRX Hamstring Curl', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec' },
-    { id: 'trx-bridge', name: 'TRX Bridge', difficulty: 'beginner', duration: '10-15 reps', rest: '45 sec' },
-    { id: 'trx-lateral-lunge', name: 'TRX Lateral Lunge', difficulty: 'intermediate', duration: '8-12 reps', rest: '60 sec' }
+    { id: 'trx-squat', name: 'TRX Assisted Squat', difficulty: 'beginner', duration: '12-18 reps', rest: '60 sec', description: 'Hold TRX straps and stand with feet shoulder-width apart. Use the straps for balance and assistance as you lower into a squat, then stand back up.' },
+    { id: 'trx-lunge', name: 'TRX Lunge', difficulty: 'intermediate', duration: '10-12 reps', rest: '60 sec', description: 'Hold TRX straps for balance. Step forward into a lunge position, lowering until both knees are bent at 90 degrees. Push back to start and alternate legs.' },
+    { id: 'trx-single-leg-squat', name: 'TRX Single Leg Squat', difficulty: 'advanced', duration: '6-10 reps', rest: '90 sec', description: 'Hold TRX straps and balance on one leg. Lower into a single-leg squat while keeping the other leg extended. Use straps for minimal assistance.' },
+    { id: 'trx-hamstring-curl', name: 'TRX Hamstring Curl', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec', description: 'Lie on your back with heels in TRX straps. Lift your hips and pull your heels toward your glutes by bending your knees, then extend back out.' },
+    { id: 'trx-bridge', name: 'TRX Bridge', difficulty: 'beginner', duration: '10-15 reps', rest: '45 sec', description: 'Lie on your back with feet in TRX straps. Lift your hips toward the ceiling while keeping your shoulders on the ground, then lower back down.' },
+    { id: 'trx-lateral-lunge', name: 'TRX Lateral Lunge', difficulty: 'intermediate', duration: '8-12 reps', rest: '60 sec', description: 'Hold TRX straps and step sideways into a lunge. Lower your body until the lunging knee is bent at 90 degrees, then push back to center and alternate sides.' }
   ],
   arms: [
-    { id: 'trx-bicep-curl', name: 'TRX Bicep Curl', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec' },
-    { id: 'trx-tricep-extension', name: 'TRX Tricep Extension', difficulty: 'intermediate', duration: '8-12 reps', rest: '60 sec' },
-    { id: 'trx-overhead-extension', name: 'TRX Overhead Extension', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec' },
-    { id: 'trx-atomic-bicep', name: 'TRX Atomic Bicep', difficulty: 'advanced', duration: '6-10 reps', rest: '90 sec' }
+    { id: 'trx-bicep-curl', name: 'TRX Bicep Curl', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec', description: 'Face the anchor point holding TRX straps with palms facing up. Lean back slightly and curl your body up by bending your elbows, then lower back down.' },
+    { id: 'trx-tricep-extension', name: 'TRX Tricep Extension', difficulty: 'intermediate', duration: '8-12 reps', rest: '60 sec', description: 'Face away from the anchor holding TRX straps overhead. Lower your body by extending your arms, then pull back up using your triceps.' },
+    { id: 'trx-overhead-extension', name: 'TRX Overhead Extension', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec', description: 'Hold TRX straps overhead with arms extended. Lower your body by bending your elbows, keeping them close to your head, then extend back up.' },
+    { id: 'trx-atomic-bicep', name: 'TRX Atomic Bicep', difficulty: 'advanced', duration: '6-10 reps', rest: '90 sec', description: 'Start in a plank position with feet in TRX straps. Perform a bicep curl by pulling your body up, then lower back down. Advanced core and arm exercise.' }
   ],
   shoulders: [
-    { id: 'trx-y-fly', name: 'TRX Y-Fly', difficulty: 'beginner', duration: '12-18 reps', rest: '45 sec' },
-    { id: 'trx-w-raise', name: 'TRX W-Raise', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec' },
-    { id: 'trx-lateral-raise', name: 'TRX Lateral Raise', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec' },
-    { id: 'trx-reverse-fly', name: 'TRX Reverse Fly', difficulty: 'beginner', duration: '12-18 reps', rest: '45 sec' }
+    { id: 'trx-y-fly', name: 'TRX Y-Fly', difficulty: 'beginner', duration: '12-18 reps', rest: '45 sec', description: 'Face the anchor point holding TRX straps. Lean back and raise your arms overhead in a Y shape, then lower back down. Focus on shoulder blade retraction.' },
+    { id: 'trx-w-raise', name: 'TRX W-Raise', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec', description: 'Face the anchor holding TRX straps. Lean back and raise your arms out to the sides in a W shape, squeezing your shoulder blades together.' },
+    { id: 'trx-lateral-raise', name: 'TRX Lateral Raise', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec', description: 'Face the anchor holding TRX straps. Lean back and raise your arms out to the sides, keeping them straight, then lower back down.' },
+    { id: 'trx-reverse-fly', name: 'TRX Reverse Fly', difficulty: 'beginner', duration: '12-18 reps', rest: '45 sec', description: 'Face the anchor holding TRX straps. Lean back and pull your arms apart horizontally, focusing on rear shoulder development.' }
   ]
 }
 
@@ -884,7 +914,7 @@ function getTrxProgramDays(programType, duration) {
           ]
           workouts = [
             `Warm-up: dynamic mobility`,
-            ...exercises.map(ex => `${ex.name}: ${exercises.difficulty === 'advanced' ? 3 : 3} sets of ${ex.duration}`),
+            ...exercises.map(ex => `${ex.name}: ${ex.difficulty === 'advanced' ? 3 : 3} sets of ${ex.duration}`),
             `Cool-down: static stretching`
           ]
         } else {
@@ -2740,9 +2770,29 @@ function App() {
               </div>
 
               <ul>
-                {selectedPlan.workouts.map((work, index) => (
-                  <li key={index}>{work}</li>
-                ))}
+                {selectedPlan.workouts.map((work, index) => {
+                  // Check if this workout contains a TRX exercise
+                  const trxExerciseMatch = work.match(/^(.+?TRX .+?):\s*(.+)$/)
+                  if (trxExerciseMatch) {
+                    const [, exerciseName, details] = trxExerciseMatch
+                    return (
+                      <li key={index}>
+                        <button
+                          type="button"
+                          className="exercise-link"
+                          onClick={() => {
+                            setSelectedExercise(exerciseName.trim())
+                            setShowExerciseModal(true)
+                          }}
+                        >
+                          {exerciseName}
+                        </button>
+                        : {details}
+                      </li>
+                    )
+                  }
+                  return <li key={index}>{work}</li>
+                })}
               </ul>
 
               {nswProgramActive && (selectedPlan.amSession?.length > 0 || selectedPlan.pmSession?.length > 0) && (
@@ -3497,7 +3547,9 @@ function App() {
             </button>
             <h3>{selectedExercise || 'Exercise Details'}</h3>
             <p>{selectedExerciseDescription || 'Select an exercise to view the PDF description.'}</p>
-            <p className="subline">Source: NSW Physical Training Guide</p>
+            <p className="subline">
+              Source: {selectedExercise?.startsWith('TRX') ? 'TRX Training Guide' : 'NSW Physical Training Guide'}
+            </p>
             <button type="button" className="action-button" onClick={() => setShowExerciseModal(false)}>
               Close
             </button>
