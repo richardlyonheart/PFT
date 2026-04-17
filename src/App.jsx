@@ -10,6 +10,7 @@ const MAX_PROGRAM_DAYS = 360
 const DEFAULT_PROGRAM_DAYS = 60
 const DEFAULT_PROFILE = 'default'
 const NSW_PROFILE = 'nsw26'
+const TRX_PROFILE = 'trx'
 
 const workoutCatalog = [
   { id: 'row2k', label: 'Row 2,000m', logField: 'row' },
@@ -1857,6 +1858,7 @@ function App() {
   const [pstInputs, setPstInputs] = useState({ run15: '', swim500y: '', pushups: '', situps: '', pullups: '' })
   const [selectedExercise, setSelectedExercise] = useState('')
   const [showExerciseModal, setShowExerciseModal] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
   const [firebaseApi, setFirebaseApi] = useState(null)
   const [cloudStatus, setCloudStatus] = useState('Checking cloud config...')
   const [cloudUid, setCloudUid] = useState('')
@@ -1866,6 +1868,15 @@ function App() {
   const applyingRemoteRef = useRef(false)
   const lastCloudPayloadRef = useRef('')
   const wakeLockRef = useRef(null)
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     localStorage.setItem(getProfileStorageKey(STORAGE_KEY, activeProfile), JSON.stringify(logs))
@@ -2192,7 +2203,7 @@ function App() {
   const isTestDay = selectedPlan.day === 0 || selectedPlan.day === programConfig.programDays
   const isChecklistDay = nswProgramActive || isSwimDay || isTestDay
   const activeWorkoutItems = workoutCatalog.filter((item) => workoutEnabled(programConfig.selectedWorkouts, item.id))
-  const heroProgramTitle = nswProgramActive ? 'NSW Training Program' : 'PFT Training Program'
+  const heroProgramTitle = activeProfile === NSW_PROFILE ? 'NSW Training Program' : activeProfile === TRX_PROFILE ? 'TRX Training Program' : 'PFT Training Program'
   const allPdfExercises = useMemo(() => Object.keys(exerciseDescriptions), [])
   const todaysExercises = useMemo(() => getExercisesForPlan(selectedPlan), [selectedPlan])
   const selectedExerciseDescription = selectedExercise ? exerciseDescriptions[selectedExercise] : ''
@@ -2206,7 +2217,11 @@ function App() {
           .map((entry) => entry.key)
       })
 
-    return Array.from(new Set([...fromPlan, ...fromSteps]))
+    // Add TRX exercises when TRX tab is active
+    const trxExercises = activeTab === 'trx' ? 
+      Object.values(trxExercises).flat().map(ex => ex.name) : []
+
+    return Array.from(new Set([...fromPlan, ...fromSteps, ...trxExercises]))
   }, [selectedPlan, sessionSteps])
   const baselineCoverageByWorkout = {
     row2k: baseline.hasRow2kBaseline,
@@ -2577,56 +2592,63 @@ function App() {
     }
   }, [swimChecks, sessionSteps, selectedDay, isChecklistDay])
 
+  const shouldHideHeroOnMobile = ['timer', 'nsw', 'nswCalendar', 'trx'].includes(activeTab) && isMobile
+
   return (
     <div className="app-shell">
-      <header className="hero-panel">
-        <p className="eyebrow">{programConfig.programDays}-Day Performance Builder</p>
-        <h1>{heroProgramTitle}</h1>
-        <p className="cloud-status">{cloudStatus}</p>
-        {authError && <p className="auth-error">{authError}</p>}
-        {firebaseApi?.firebaseConfigured && (
-          <div className="auth-actions">
-            {cloudUid ? (
-              <>
-                <span className="signed-in-as">Signed in as {cloudUserLabel}</span>
-                <button type="button" className="hero-button" onClick={signOutFromCloud}>Sign out</button>
-              </>
-            ) : (
-              <>
-                <button type="button" className="hero-button" onClick={signInWithGoogle}>
-                  Sign in with Google
-                </button>
-                <button type="button" className="hero-button hero-button-alt" onClick={continueAsGuest}>
-                  Continue as guest
-                </button>
-              </>
-            )}
+      {!shouldHideHeroOnMobile && (
+        <header className="hero-panel">
+          <p className="eyebrow">{programConfig.programDays}-Day Performance Builder</p>
+          <h1>{heroProgramTitle}</h1>
+          <p className="cloud-status">{cloudStatus}</p>
+          {authError && <p className="auth-error">{authError}</p>}
+          {firebaseApi?.firebaseConfigured && (
+            <div className="auth-actions">
+              {cloudUid ? (
+                <>
+                  <span className="signed-in-as">Signed in as {cloudUserLabel}</span>
+                  <button type="button" className="hero-button" onClick={signOutFromCloud}>Sign out</button>
+                </>
+              ) : (
+                <>
+                  <button type="button" className="hero-button" onClick={signInWithGoogle}>
+                    Sign in with Google
+                  </button>
+                  <button type="button" className="hero-button hero-button-alt" onClick={continueAsGuest}>
+                    Continue as guest
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+          <div className="hero-metrics">
+            <div>
+              <strong>{completeCount}</strong>
+              <span>days done</span>
+            </div>
+            <div>
+              <strong>Day {selectedDay}</strong>
+              <span>{selectedPlan.title}</span>
+            </div>
+            <div>
+              <strong>{programConfig.programDays}</strong>
+              <span>total days</span>
+            </div>
           </div>
-        )}
-        <div className="hero-metrics">
-          <div>
-            <strong>{completeCount}</strong>
-            <span>days done</span>
+          <div className="goal-inline">
+            <span>Profile: {activeProfile === NSW_PROFILE ? 'NSW 26-week slot' : activeProfile === TRX_PROFILE ? 'TRX Program slot' : 'Standard slot'}</span>
+            <button type="button" className="hero-button" onClick={() => switchProfile(DEFAULT_PROFILE)}>
+              Standard Profile
+            </button>
+            <button type="button" className="hero-button hero-button-alt" onClick={() => switchProfile(NSW_PROFILE)}>
+              NSW Profile
+            </button>
+            <button type="button" className="hero-button hero-button-alt" onClick={() => switchProfile(TRX_PROFILE)}>
+              TRX Profile
+            </button>
           </div>
-          <div>
-            <strong>Day {selectedDay}</strong>
-            <span>{selectedPlan.title}</span>
-          </div>
-          <div>
-            <strong>{programConfig.programDays}</strong>
-            <span>total days</span>
-          </div>
-        </div>
-        <div className="goal-inline">
-          <span>Profile: {activeProfile === NSW_PROFILE ? 'NSW 26-week slot' : 'Standard slot'}</span>
-          <button type="button" className="hero-button" onClick={() => switchProfile(DEFAULT_PROFILE)}>
-            Standard Profile
-          </button>
-          <button type="button" className="hero-button hero-button-alt" onClick={() => switchProfile(NSW_PROFILE)}>
-            NSW Profile
-          </button>
-        </div>
-      </header>
+        </header>
+      )}
 
       <main className="tab-content">
         {activeTab === 'calendar' && (
@@ -2914,16 +2936,6 @@ function App() {
         {activeTab === 'timer' && (
           <div className="day-details">
             <div className="card">
-              <p className="phase-tag">{selectedPlan.phase}</p>
-              <h2>
-                Day {selectedPlan.day}: {selectedPlan.title}
-              </h2>
-              <p className="subline">
-                {selectedPlan.week > 0 ? `Week ${selectedPlan.week}` : 'Preparation'} | {selectedPlan.dayName}
-              </p>
-            </div>
-
-            <div className="card">
               <h3>Exercise Guide (Timer)</h3>
               <p className="subline">Select an exercise to open its PDF description.</p>
               <div className="exercise-guide-row">
@@ -3049,20 +3061,6 @@ function App() {
 
         {activeTab === 'nsw' && (
           <div className="day-details">
-            <div className="card nsw-card">
-              <p className="phase-tag">Naval Special Warfare</p>
-              <h2>Special Workout Tab</h2>
-              <p className="subline">Built from the NSW Physical Training Guide with optional 26-week track.</p>
-              <ul>
-                <li>Weekly layout follows LSD, CHI, and interval work for both run and swim.</li>
-                <li>Table 5 AM-PM format is built in: lifting/support in AM, cardio + flexibility in PM.</li>
-                <li>Strength/core stays in a split routine with calisthenics progression.</li>
-                <li>Warm-up, cool-down, and daily flexibility are required every week.</li>
-                <li>Sunday remains recovery/mobility focused.</li>
-                <li>Lift days use one support focus (calisthenics or core) to avoid overloading.</li>
-              </ul>
-            </div>
-
             <div className="card nsw-card">
               <h3>26-Week Plan Option</h3>
               <div className="nsw-option-row">
@@ -3234,12 +3232,6 @@ function App() {
 
         {activeTab === 'trx' && (
           <div className="day-details">
-            <div className="card">
-              <p className="phase-tag">TRX Suspension Training</p>
-              <h2>TRX Program Builder</h2>
-              <p className="subline">Build a customizable TRX training program targeting specific muscle groups.</p>
-            </div>
-
             <div className="card">
               <h3>Select Program Type</h3>
               <div className="field-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
