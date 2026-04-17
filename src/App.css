@@ -605,13 +605,17 @@ textarea {
   bottom: 0;
   left: 0;
   right: 0;
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
   background: var(--panel);
   border-top: 1px solid var(--line);
   padding: 0.4rem 0 max(0.4rem, env(safe-area-inset-bottom));
   z-index: 100;
   backdrop-filter: blur(8px);
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nsw-card h3 {
@@ -640,7 +644,7 @@ textarea {
   flex-direction: column;
   align-items: center;
   gap: 0.15rem;
-  padding: 0.4rem 0.2rem;
+  padding: 0.4rem 0.6rem;
   border: none;
   background: none;
   color: var(--muted);
@@ -649,6 +653,9 @@ textarea {
   font-weight: 600;
   letter-spacing: 0.02em;
   transition: color 120ms;
+  flex-shrink: 0;
+  min-width: 60px;
+  white-space: nowrap;
 }
 
 .nav-tab.active {

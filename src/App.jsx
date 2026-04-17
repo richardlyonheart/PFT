@@ -729,6 +729,248 @@ function buildNswProgram() {
   return plan
 }
 
+// TRX Exercise Catalog
+const trxExercises = {
+  core: [
+    { id: 'trx-plank', name: 'TRX Plank', difficulty: 'intermediate', duration: '30-60 sec', rest: '60 sec' },
+    { id: 'trx-pike', name: 'TRX Pike', difficulty: 'advanced', duration: '8-15 reps', rest: '60 sec' },
+    { id: 'trx-crunch', name: 'TRX Crunch', difficulty: 'intermediate', duration: '10-20 reps', rest: '45 sec' },
+    { id: 'trx-side-plank', name: 'TRX Side Plank', difficulty: 'intermediate', duration: '20-40 sec', rest: '45 sec' },
+    { id: 'trx-fallout', name: 'TRX Fallout', difficulty: 'advanced', duration: '8-12 reps', rest: '60 sec' },
+    { id: 'trx-body-saw', name: 'TRX Body Saw', difficulty: 'advanced', duration: '10-20 reps', rest: '60 sec' }
+  ],
+  chest: [
+    { id: 'trx-push-up', name: 'TRX Push-up', difficulty: 'beginner', duration: '8-15 reps', rest: '60 sec' },
+    { id: 'trx-chest-press', name: 'TRX Chest Press', difficulty: 'beginner', duration: '10-15 reps', rest: '60 sec' },
+    { id: 'trx-atomic-push-up', name: 'TRX Atomic Push-up', difficulty: 'advanced', duration: '5-10 reps', rest: '90 sec' },
+    { id: 'trx-wide-chest-press', name: 'TRX Wide Chest Press', difficulty: 'intermediate', duration: '8-12 reps', rest: '60 sec' }
+  ],
+  back: [
+    { id: 'trx-row', name: 'TRX Row', difficulty: 'beginner', duration: '8-15 reps', rest: '60 sec' },
+    { id: 'trx-face-pull', name: 'TRX Face Pull', difficulty: 'beginner', duration: '12-18 reps', rest: '45 sec' },
+    { id: 'trx-low-row', name: 'TRX Low Row', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec' },
+    { id: 'trx-high-row', name: 'TRX High Row', difficulty: 'beginner', duration: '10-15 reps', rest: '60 sec' },
+    { id: 'trx-suspension-pull', name: 'TRX Suspension Pull', difficulty: 'advanced', duration: '5-12 reps', rest: '90 sec' }
+  ],
+  legs: [
+    { id: 'trx-squat', name: 'TRX Assisted Squat', difficulty: 'beginner', duration: '12-18 reps', rest: '60 sec' },
+    { id: 'trx-lunge', name: 'TRX Lunge', difficulty: 'intermediate', duration: '10-12 reps', rest: '60 sec' },
+    { id: 'trx-single-leg-squat', name: 'TRX Single Leg Squat', difficulty: 'advanced', duration: '6-10 reps', rest: '90 sec' },
+    { id: 'trx-hamstring-curl', name: 'TRX Hamstring Curl', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec' },
+    { id: 'trx-bridge', name: 'TRX Bridge', difficulty: 'beginner', duration: '10-15 reps', rest: '45 sec' },
+    { id: 'trx-lateral-lunge', name: 'TRX Lateral Lunge', difficulty: 'intermediate', duration: '8-12 reps', rest: '60 sec' }
+  ],
+  arms: [
+    { id: 'trx-bicep-curl', name: 'TRX Bicep Curl', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec' },
+    { id: 'trx-tricep-extension', name: 'TRX Tricep Extension', difficulty: 'intermediate', duration: '8-12 reps', rest: '60 sec' },
+    { id: 'trx-overhead-extension', name: 'TRX Overhead Extension', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec' },
+    { id: 'trx-atomic-bicep', name: 'TRX Atomic Bicep', difficulty: 'advanced', duration: '6-10 reps', rest: '90 sec' }
+  ],
+  shoulders: [
+    { id: 'trx-y-fly', name: 'TRX Y-Fly', difficulty: 'beginner', duration: '12-18 reps', rest: '45 sec' },
+    { id: 'trx-w-raise', name: 'TRX W-Raise', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec' },
+    { id: 'trx-lateral-raise', name: 'TRX Lateral Raise', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec' },
+    { id: 'trx-reverse-fly', name: 'TRX Reverse Fly', difficulty: 'beginner', duration: '12-18 reps', rest: '45 sec' }
+  ]
+}
+
+// TRX Program Templates
+function getTrxProgramDays(programType, duration) {
+  const days = []
+  const durationWeeks = Math.floor(duration / 7)
+  
+  for (let day = 1; day <= duration; day++) {
+    const week = Math.ceil(day / 7)
+    const dayOfWeek = (day - 1) % 7
+    const dayName = weekDayNames[dayOfWeek]
+    
+    let focus = ''
+    let exercises = []
+    let workouts = []
+    
+    // Generate weekly split based on program type
+    switch(programType) {
+      case 'full-body':
+        focus = 'Full Body'
+        exercises = [
+          ...trxExercises.core.slice(0, 1),
+          ...trxExercises.chest.slice(0, 1),
+          ...trxExercises.back.slice(0, 1),
+          ...trxExercises.legs.slice(0, 1)
+        ]
+        workouts = [
+          `Warm-up: 5-10 min light cardio + mobility`,
+          `${exercises[0].name}: ${exercises[0].duration}`,
+          `${exercises[1].name}: ${exercises[1].duration}`,
+          `${exercises[2].name}: ${exercises[2].duration}`,
+          `${exercises[3].name}: ${exercises[3].duration}`,
+          `Active recovery: walking or easy stretching`
+        ]
+        break
+        
+      case 'upper':
+        if (dayOfWeek === 0 || dayOfWeek === 3) { // Monday/Thursday - Chest/Back
+          focus = 'Upper Body Power'
+          exercises = [
+            ...trxExercises.core.slice(0, 1),
+            ...trxExercises.chest.slice(0, 2)
+          ]
+        } else if (dayOfWeek === 2 || dayOfWeek === 5) { // Wednesday/Saturday - Back/Arms
+          focus = 'Upper Body Strength'
+          exercises = [
+            ...trxExercises.back.slice(1, 3),
+            ...trxExercises.arms.slice(0, 2)
+          ]
+        } else {
+          focus = 'Active Recovery'
+          exercises = []
+        }
+        workouts = exercises.length > 0 
+          ? [
+              `Warm-up: 5-10 min preparation`,
+              ...exercises.slice(0, 3).map(ex => `${ex.name}: ${ex.duration}`),
+              `Cool-down: stretching and recovery`
+            ]
+          : [`Light mobility work and stretching - active recovery day`]
+        break
+        
+      case 'core':
+        if (dayOfWeek === 0 || dayOfWeek === 2 || dayOfWeek === 4) { // Mon/Wed/Fri
+          focus = 'Core Focus'
+          exercises = [
+            ...trxExercises.core.slice(0, 3)
+          ]
+          workouts = [
+            `Warm-up: dynamic mobility`,
+            ...exercises.map(ex => `${ex.name}: ${exercises.difficulty === 'advanced' ? 3 : 3} sets of ${ex.duration}`),
+            `Cool-down: static stretching`
+          ]
+        } else {
+          focus = 'Upper Body Focus'
+          exercises = [
+            ...trxExercises.chest.slice(0, 1),
+            ...trxExercises.back.slice(0, 1),
+            ...trxExercises.shoulders.slice(0, 1)
+          ]
+          workouts = [
+            `Warm-up preparation`,
+            ...exercises.map(ex => `${ex.name}: ${ex.duration}`),
+            `Mobility cool-down`
+          ]
+        }
+        break
+        
+      case 'leg':
+        if (dayOfWeek === 1 || dayOfWeek === 4) { // Tues/Friday
+          focus = 'Leg Focus'
+          exercises = [
+            ...trxExercises.core.slice(0, 1),
+            ...trxExercises.legs.slice(0, 3)
+          ]
+          workouts = [
+            `Warm-up: 10 min dynamic prep`,
+            ...exercises.map(ex => `${ex.name}: ${ex.duration}`),
+            `Finisher: 5 min easy row or walk`,
+            `Cool-down stretch`
+          ]
+        } else if (dayOfWeek === 3) {
+          focus = 'Upper Body Support'
+          exercises = [...trxExercises.back.slice(0, 2), ...trxExercises.arms.slice(0, 2)]
+          workouts = [
+            `Warm-up mobility`,
+            ...exercises.map(ex => `${ex.name}: ${ex.duration}`),
+            `Cool-down`
+          ]
+        } else {
+          focus = 'Active Recovery'
+          exercises = []
+          workouts = [`Light walking, stretching, or foam rolling`]
+        }
+        break
+        
+      case 'arm':
+        if (dayOfWeek === 0 || dayOfWeek === 3) { // Mon/Thurs
+          focus = 'Arm Focus'
+          exercises = [
+            ...trxExercises.arms.slice(0, 4)
+          ]
+          workouts = [
+            `Warm-up: shoulder mobility`,
+            ...exercises.slice(0, 3).map(ex => `${ex.name}: ${ex.difficulty === 'advanced' ? 3 : 3} sets of ${ex.duration}`),
+            `Finisher: light stretching`
+          ]
+        } else if (dayOfWeek === 2 || dayOfWeek === 5) {
+          focus = 'Push/Pull Balance'
+          exercises = [
+            ...trxExercises.chest.slice(0, 1),
+            ...trxExercises.back.slice(0, 1),
+            ...trxExercises.core.slice(0, 1)
+          ]
+          workouts = [
+            `Warm-up`,
+            ...exercises.map(ex => `${ex.name}: ${ex.duration}`),
+            `Cool-down`
+          ]
+        } else {
+          focus = 'Active Recovery'
+          exercises = []
+          workouts = [`Mobility and stretching`]
+        }
+        break
+        
+      case 'back':
+        if (dayOfWeek === 1 || dayOfWeek === 4) { // Tues/Friday
+          focus = 'Back Focus'
+          exercises = [
+            ...trxExercises.back.slice(0, 4)
+          ]
+          workouts = [
+            `Warm-up`,
+            ...exercises.slice(0, 3).map(ex => `${ex.name}: ${ex.difficulty === 'advanced' ? 3 : 3} sets of ${ex.duration}`),
+            `Cool-down stretch`
+          ]
+        } else if (dayOfWeek === 0 || dayOfWeek === 3) {
+          focus = 'Chest & Shoulders'
+          exercises = [
+            ...trxExercises.chest.slice(0, 2),
+            ...trxExercises.shoulders.slice(0, 2)
+          ]
+          workouts = [
+            `Preparation`,
+            ...exercises.slice(0, 3).map(ex => `${ex.name}: ${ex.duration}`),
+            `Recovery`
+          ]
+        } else {
+          focus = 'Active Recovery'
+          exercises = []
+          workouts = [`Easy movement and stretching`]
+        }
+        break
+        
+      default:
+        focus = 'Rest Day'
+        workouts = [`Active recovery: light movement and flexibility work`]
+    }
+    
+    const phase = week <= durationWeeks * 0.25 ? 'Foundation' 
+                : week <= durationWeeks * 0.5 ? 'Build'
+                : week <= durationWeeks * 0.75 ? 'Strength'
+                : 'Peak'
+    
+    days.push({
+      day,
+      week,
+      dayName,
+      title: focus,
+      phase,
+      workouts,
+      exercises: exercises.slice(0, 3) // Keep top 3 for display
+    })
+  }
+  
+  return days
+}
+
 function getProfileStorageKey(baseKey, profileId) {
   return profileId === DEFAULT_PROFILE ? baseKey : `${baseKey}-${profileId}`
 }
@@ -1607,6 +1849,9 @@ function App() {
   const [nswWeek, setNswWeek] = useState(1)
   const [nswCalendarWeek, setNswCalendarWeek] = useState(1)
   const [nswOption, setNswOption] = useState('preview')
+  const [trxProgramType, setTrxProgramType] = useState('core')
+  const [trxDuration, setTrxDuration] = useState(28)
+  const [selectedTrxDay, setSelectedTrxDay] = useState(1)
   const [logs, setLogs] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).logs)
   const [goals, setGoals] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).goals)
   const [pstInputs, setPstInputs] = useState({ run15: '', swim500y: '', pushups: '', situps: '', pullups: '' })
@@ -1931,6 +2176,11 @@ function App() {
       : getDailyPrescription(selectedPlan, baseline, goalMetrics, programConfig)),
     [selectedPlan, nswChartTargets, baseline, goalMetrics, programConfig, nswProgramActive]
   )
+  const trxProgram = useMemo(
+    () => getTrxProgramDays(trxProgramType, trxDuration),
+    [trxProgramType, trxDuration]
+  )
+  const selectedTrxPlan = trxProgram.find((item) => item.day === selectedTrxDay) || trxProgram[0] || {}
   const nswPlanApplied =
     activeProfile === NSW_PROFILE &&
     programConfig.programDays === 182 &&
@@ -2981,6 +3231,165 @@ function App() {
             </div>
           </div>
         )}
+
+        {activeTab === 'trx' && (
+          <div className="day-details">
+            <div className="card">
+              <p className="phase-tag">TRX Suspension Training</p>
+              <h2>TRX Program Builder</h2>
+              <p className="subline">Build a customizable TRX training program targeting specific muscle groups.</p>
+            </div>
+
+            <div className="card">
+              <h3>Select Program Type</h3>
+              <div className="field-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
+                <label>
+                  <input
+                    type="radio"
+                    name="trxType"
+                    value="full-body"
+                    checked={trxProgramType === 'full-body'}
+                    onChange={(e) => setTrxProgramType(e.target.value)}
+                  />
+                  Full Body
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="trxType"
+                    value="upper"
+                    checked={trxProgramType === 'upper'}
+                    onChange={(e) => setTrxProgramType(e.target.value)}
+                  />
+                  Upper Body
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="trxType"
+                    value="core"
+                    checked={trxProgramType === 'core'}
+                    onChange={(e) => setTrxProgramType(e.target.value)}
+                  />
+                  Core Focus
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="trxType"
+                    value="leg"
+                    checked={trxProgramType === 'leg'}
+                    onChange={(e) => setTrxProgramType(e.target.value)}
+                  />
+                  Leg Focus
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="trxType"
+                    value="arm"
+                    checked={trxProgramType === 'arm'}
+                    onChange={(e) => setTrxProgramType(e.target.value)}
+                  />
+                  Arm Focus
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="trxType"
+                    value="back"
+                    checked={trxProgramType === 'back'}
+                    onChange={(e) => setTrxProgramType(e.target.value)}
+                  />
+                  Back Focus
+                </label>
+              </div>
+            </div>
+
+            <div className="card">
+              <h3>Program Duration</h3>
+              <label className="nsw-week-label">
+                Duration: {trxDuration} days
+                <input
+                  type="range"
+                  min="14"
+                  max="84"
+                  step="1"
+                  value={trxDuration}
+                  onChange={(e) => {
+                    const newDuration = Number(e.target.value)
+                    setTrxDuration(newDuration)
+                    setSelectedTrxDay(Math.min(selectedTrxDay, newDuration))
+                  }}
+                />
+              </label>
+              <p className="subline">({Math.ceil(trxDuration / 7)} weeks)</p>
+            </div>
+
+            <div className="card">
+              <h3>Program Calendar</h3>
+              <div className="day-list-page" style={{ maxHeight: '400px', overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
+                {trxProgram.map((item) => (
+                  <button
+                    key={item.day}
+                    type="button"
+                    className={`day-chip ${item.day === selectedTrxDay ? 'active' : ''}`}
+                    onClick={() => setSelectedTrxDay(item.day)}
+                  >
+                    <span>Day {item.day}</span>
+                    <small>{item.title}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="card">
+              <p className="phase-tag">{selectedTrxPlan.phase || 'Training'}</p>
+              <h2>
+                Day {selectedTrxPlan.day}: {selectedTrxPlan.title}
+              </h2>
+              <p className="subline">
+                Week {selectedTrxPlan.week || 1} | {selectedTrxPlan.dayName}
+              </p>
+
+              <div className="target-box">
+                <h3>Today's Workout</h3>
+                <ul>
+                  {selectedTrxPlan.workouts && selectedTrxPlan.workouts.map((workout, index) => (
+                    <li key={index} className="target-item">
+                      {workout}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {selectedTrxPlan.exercises && selectedTrxPlan.exercises.length > 0 && (
+                <div className="target-box">
+                  <h3>Recommended Exercises</h3>
+                  <ul>
+                    {selectedTrxPlan.exercises.map((exercise, index) => (
+                      <li key={index} className="target-item">
+                        <strong>{exercise.name}</strong>
+                        <span className="target-source">{exercise.difficulty} · {exercise.duration}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div className="card">
+              <h3>Program Overview</h3>
+              <ul>
+                <li><strong>Type:</strong> {trxProgramType.replace('-', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</li>
+                <li><strong>Duration:</strong> {trxDuration} days ({Math.ceil(trxDuration / 7)} weeks)</li>
+                <li><strong>Protocol:</strong> Progressive resistance training using TRX suspension straps</li>
+                <li><strong>Progression:</strong> Foundation → Build → Strength → Peak phases</li>
+                <li><strong>Rest:</strong> Built-in recovery days and active recovery sessions</li>
+              </ul>
+            </div>
+          </div>
+        )}
       </main>
 
       <nav className="bottom-nav">
@@ -3031,6 +3440,14 @@ function App() {
         >
           <span className="nav-icon">W</span>
           <span>Week Cal</span>
+        </button>
+        <button
+          type="button"
+          className={`nav-tab ${activeTab === 'trx' ? 'active' : ''}`}
+          onClick={() => setActiveTab('trx')}
+        >
+          <span className="nav-icon">💪</span>
+          <span>TRX</span>
         </button>
       </nav>
 
