@@ -760,47 +760,6 @@ function buildNswProgram() {
   return plan
 }
 
-function buildTrxProgram() {
-  const plan = [
-    {
-      day: 0,
-      phase: 'TRX Prep',
-      week: 0,
-      dayName: 'Prep Day',
-      title: 'TRX Program Setup + Baseline',
-      workouts: [
-        'TRX setup: Ensure straps are properly anchored and adjusted',
-        'Bodyweight assessment: Test basic movements without TRX',
-        'Mobility check: Assess shoulder and core mobility',
-        'Review program structure and safety guidelines'
-      ],
-      notes: [
-        'Start with shorter strap lengths for beginners',
-        'Focus on proper form over weight/resistance',
-        'Consult a physician before beginning if you have shoulder issues'
-      ]
-    }
-  ]
-
-  // Use the TRX program generator with default settings (core focus, 28 days)
-  const trxDays = getTrxProgramDays('core', 28)
-  
-  trxDays.forEach(dayData => {
-    plan.push({
-      day: dayData.day,
-      phase: dayData.phase,
-      week: dayData.week,
-      dayName: dayData.dayName,
-      title: dayData.title,
-      workouts: dayData.workouts,
-      exercises: dayData.exercises,
-      notes: []
-    })
-  })
-
-  return plan
-}
-
 // TRX Exercise Catalog
 const trxExercises = {
   core: [
@@ -844,6 +803,47 @@ const trxExercises = {
     { id: 'trx-lateral-raise', name: 'TRX Lateral Raise', difficulty: 'intermediate', duration: '10-15 reps', rest: '60 sec', description: 'Face the anchor holding TRX straps. Lean back and raise your arms out to the sides, keeping them straight, then lower back down.' },
     { id: 'trx-reverse-fly', name: 'TRX Reverse Fly', difficulty: 'beginner', duration: '12-18 reps', rest: '45 sec', description: 'Face the anchor holding TRX straps. Lean back and pull your arms apart horizontally, focusing on rear shoulder development.' }
   ]
+}
+
+function buildTrxProgram() {
+  const plan = [
+    {
+      day: 0,
+      phase: 'TRX Prep',
+      week: 0,
+      dayName: 'Prep Day',
+      title: 'TRX Program Setup + Baseline',
+      workouts: [
+        'TRX setup: Ensure straps are properly anchored and adjusted',
+        'Bodyweight assessment: Test basic movements without TRX',
+        'Mobility check: Assess shoulder and core mobility',
+        'Review program structure and safety guidelines'
+      ],
+      notes: [
+        'Start with shorter strap lengths for beginners',
+        'Focus on proper form over weight/resistance',
+        'Consult a physician before beginning if you have shoulder issues'
+      ]
+    }
+  ]
+
+  // Use the TRX program generator with default settings (core focus, 28 days)
+  const trxDays = getTrxProgramDays('core', 28)
+  
+  trxDays.forEach(dayData => {
+    plan.push({
+      day: dayData.day,
+      phase: dayData.phase,
+      week: dayData.week,
+      dayName: dayData.dayName,
+      title: dayData.title,
+      workouts: dayData.workouts,
+      exercises: dayData.exercises,
+      notes: []
+    })
+  })
+
+  return plan
 }
 
 // TRX Program Templates
