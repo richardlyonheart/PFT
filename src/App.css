@@ -605,6 +605,28 @@ textarea {
   }
 }
 
+.action-buttons {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.completion-status {
+  margin-top: 1rem;
+  text-align: center;
+  color: #145247;
+  font-weight: 700;
+}
+
+.complete-indicator {
+  display: inline-block;
+  background: rgba(20, 82, 71, 0.12);
+  border: 1px solid rgba(20, 82, 71, 0.3);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.9rem;
+}
+
 @media (max-width: 950px) {
   .field-grid,
   .hero-metrics,

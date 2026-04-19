@@ -2965,7 +2965,7 @@ function App() {
                 <div className="action-buttons">
                   <button
                     type="button"
-                    className="hero-button"
+                    className="action-button"
                     onClick={() => {
                       const newLogs = { ...logs, [selectedDay]: { complete: true, completedAt: new Date().toISOString() } }
                       setLogs(newLogs)
@@ -2992,6 +2992,19 @@ function App() {
                   {logs[selectedDay].completedAt && (
                     <small>{new Date(logs[selectedDay].completedAt).toLocaleDateString()}</small>
                   )}
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => {
+                      const newLogs = { ...logs }
+                      delete newLogs[selectedDay]
+                      setLogs(newLogs)
+                      localStorage.setItem(getProfileStorageKey(STORAGE_KEY, activeProfile), JSON.stringify(newLogs))
+                    }}
+                    style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}
+                  >
+                    Unmark as Complete
+                  </button>
                 </div>
               )}
 
@@ -3172,6 +3185,24 @@ function App() {
                 <li>Push-up scaling: incline to knee to full strict reps.</li>
                 <li>Plank scaling: shorter sets or knee plank while maintaining position quality.</li>
               </ul>
+
+              <div className="reset-actions" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--line)' }}>
+                <h4>Danger Zone</h4>
+                <p className="subline">These actions cannot be undone.</p>
+                <button
+                  type="button"
+                  className="ghost-button"
+                  style={{ borderColor: '#dc2626', color: '#dc2626' }}
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to reset all progress? This will clear all completion data and cannot be undone.')) {
+                      setLogs({})
+                      localStorage.setItem(getProfileStorageKey(STORAGE_KEY, activeProfile), JSON.stringify({}))
+                    }
+                  }}
+                >
+                  Reset All Progress
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -3650,7 +3681,7 @@ function App() {
                 {!trxLogs[selectedTrxDay]?.complete && (
                   <button
                     type="button"
-                    className="hero-button"
+                    className="action-button"
                     onClick={() => {
                       const newLogs = { ...trxLogs, [selectedTrxDay]: { complete: true, completedAt: new Date().toISOString() } }
                       setTrxLogs(newLogs)
@@ -3674,6 +3705,19 @@ function App() {
                     {trxLogs[selectedTrxDay].completedAt && (
                       <small>{new Date(trxLogs[selectedTrxDay].completedAt).toLocaleDateString()}</small>
                     )}
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => {
+                        const newLogs = { ...trxLogs }
+                        delete newLogs[selectedTrxDay]
+                        setTrxLogs(newLogs)
+                        localStorage.setItem('trx-logs-v1', JSON.stringify(newLogs))
+                      }}
+                      style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}
+                    >
+                      Unmark as Complete
+                    </button>
                   </div>
                 )}
               </div>
@@ -3705,6 +3749,23 @@ function App() {
                   <strong>{Math.round((Object.keys(trxLogs).filter(day => trxLogs[day]?.complete).length / trxDuration) * 100)}%</strong>
                   <span>complete</span>
                 </div>
+              </div>
+
+              <div className="reset-actions" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--line)' }}>
+                <button
+                  type="button"
+                  className="ghost-button"
+                  style={{ borderColor: '#dc2626', color: '#dc2626', fontSize: '0.85rem' }}
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to reset all TRX progress? This will clear all completion data and cannot be undone.')) {
+                      setTrxLogs({})
+                      localStorage.setItem('trx-logs-v1', JSON.stringify({}))
+                      setSelectedTrxDay(1)
+                    }
+                  }}
+                >
+                  Reset TRX Progress
+                </button>
               </div>
             </div>
           </div>
