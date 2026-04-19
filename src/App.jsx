@@ -2375,8 +2375,11 @@ function App() {
   }
 
   const switchProfile = (profileId) => {
+    const snapshot = getProfileSnapshot(profileId)
     setActiveProfile(profileId)
-    setSelectedDay(getProfileSnapshot(profileId).selectedDay)
+    setSelectedDay(snapshot.selectedDay)
+    setLogs(snapshot.logs)
+    setGoals(snapshot.goals)
   }
 
   const openExerciseGuideFor = (exerciseName) => {
