@@ -931,6 +931,7 @@ function getTrxProgramDays(programType, duration) {
           ]
         }
         break
+        break
         
       case 'leg':
         if (dayOfWeek === 1 || dayOfWeek === 4) { // Tues/Friday
@@ -2250,14 +2251,18 @@ function App() {
   const sessionSteps = useMemo(
     () => (nswProgramActive
       ? getNswSessionSteps(selectedPlan)
+      : trxProgramActive
+      ? []
       : getSessionSteps(selectedPlan, baseline, goalMetrics, logs, programConfig)),
-    [nswProgramActive, selectedPlan, baseline, goalMetrics, logs, programConfig]
+    [nswProgramActive, trxProgramActive, selectedPlan, baseline, goalMetrics, logs, programConfig]
   )
   const dayTargets = useMemo(
     () => (nswProgramActive
       ? getNswDayCalculatedTargets(selectedPlan, nswChartTargets)
+      : trxProgramActive
+      ? []
       : getDailyPrescription(selectedPlan, baseline, goalMetrics, programConfig)),
-    [selectedPlan, nswChartTargets, baseline, goalMetrics, programConfig, nswProgramActive]
+    [selectedPlan, nswChartTargets, baseline, goalMetrics, programConfig, nswProgramActive, trxProgramActive]
   )
   const trxProgram = useMemo(
     () => getTrxProgramDays(trxProgramType, trxDuration),
@@ -2371,6 +2376,7 @@ function App() {
 
   const switchProfile = (profileId) => {
     setActiveProfile(profileId)
+    setSelectedDay(getProfileSnapshot(profileId).selectedDay)
   }
 
   const openExerciseGuideFor = (exerciseName) => {
