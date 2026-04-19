@@ -2960,6 +2960,41 @@ function App() {
                   </ul>
                 </div>
               )}
+
+              {!logs[selectedDay]?.complete && (
+                <div className="action-buttons">
+                  <button
+                    type="button"
+                    className="hero-button"
+                    onClick={() => {
+                      const newLogs = { ...logs, [selectedDay]: { complete: true, completedAt: new Date().toISOString() } }
+                      setLogs(newLogs)
+                      localStorage.setItem(getProfileStorageKey(STORAGE_KEY, activeProfile), JSON.stringify(newLogs))
+                      // Find next incomplete day
+                      let nextDay = selectedDay + 1
+                      while (nextDay <= programConfig.programDays && newLogs[nextDay]?.complete) {
+                        nextDay++
+                      }
+                      if (nextDay <= programConfig.programDays) {
+                        setSelectedDay(nextDay)
+                        setActiveTab('day')
+                      }
+                    }}
+                  >
+                    Mark Day {selectedDay} Complete
+                  </button>
+                </div>
+              )}
+
+              {logs[selectedDay]?.complete && (
+                <div className="completion-status">
+                  <span className="complete-indicator">✓ Day {selectedDay} completed</span>
+                  {logs[selectedDay].completedAt && (
+                    <small>{new Date(logs[selectedDay].completedAt).toLocaleDateString()}</small>
+                  )}
+                </div>
+              )}
+
             </div>
 
             <div className="card tracker">
@@ -3261,6 +3296,40 @@ function App() {
                     Reset
                   </button>
                 </div>
+              </div>
+            )}
+
+            {!logs[selectedDay]?.complete && (
+              <div className="action-buttons">
+                <button
+                  type="button"
+                  className="hero-button"
+                  onClick={() => {
+                    const newLogs = { ...logs, [selectedDay]: { complete: true, completedAt: new Date().toISOString() } }
+                    setLogs(newLogs)
+                    localStorage.setItem(getProfileStorageKey(STORAGE_KEY, activeProfile), JSON.stringify(newLogs))
+                    // Find next incomplete day
+                    let nextDay = selectedDay + 1
+                    while (nextDay <= programConfig.programDays && newLogs[nextDay]?.complete) {
+                      nextDay++
+                    }
+                    if (nextDay <= programConfig.programDays) {
+                      setSelectedDay(nextDay)
+                      setActiveTab('day')
+                    }
+                  }}
+                >
+                  Mark Day {selectedDay} Complete
+                </button>
+              </div>
+            )}
+
+            {logs[selectedDay]?.complete && (
+              <div className="completion-status">
+                <span className="complete-indicator">✓ Day {selectedDay} completed</span>
+                {logs[selectedDay].completedAt && (
+                  <small>{new Date(logs[selectedDay].completedAt).toLocaleDateString()}</small>
+                )}
               </div>
             )}
 
