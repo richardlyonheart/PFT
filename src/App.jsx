@@ -1925,7 +1925,18 @@ function App() {
   const [nswOption, setNswOption] = useState('preview')
   const [trxProgramType, setTrxProgramType] = useState('core')
   const [trxDuration, setTrxDuration] = useState(28)
-  const [selectedTrxDay, setSelectedTrxDay] = useState(1)
+  const [trxLogs, setTrxLogs] = useState(() => getStoredJsonValue('trx-logs-v1', {}))
+  const [selectedTrxDay, setSelectedTrxDay] = useState(() => {
+    const logs = getStoredJsonValue('trx-logs-v1', {})
+    let selectedDay = trxDuration
+    for (let i = 1; i <= trxDuration; i += 1) {
+      if (!logs[i]?.complete) {
+        selectedDay = i
+        break
+      }
+    }
+    return Math.min(selectedDay, trxDuration)
+  })
   const [logs, setLogs] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).logs)
   const [goals, setGoals] = useState(() => getProfileSnapshot(localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE).goals)
   const [pstInputs, setPstInputs] = useState({ run15: '', swim500y: '', pushups: '', situps: '', pullups: '' })
@@ -2716,15 +2727,12 @@ function App() {
             </div>
           </div>
           <div className="goal-inline">
-            <span>Profile: {activeProfile === NSW_PROFILE ? 'NSW 26-week slot' : activeProfile === TRX_PROFILE ? 'TRX Program slot' : 'Standard slot'}</span>
+            <span>Profile: {activeProfile === NSW_PROFILE ? 'NSW 26-week slot' : 'Standard slot'}</span>
             <button type="button" className="hero-button" onClick={() => switchProfile(DEFAULT_PROFILE)}>
               Standard Profile
             </button>
             <button type="button" className="hero-button hero-button-alt" onClick={() => switchProfile(NSW_PROFILE)}>
               NSW Profile
-            </button>
-            <button type="button" className="hero-button hero-button-alt" onClick={() => switchProfile(TRX_PROFILE)}>
-              TRX Profile
             </button>
           </div>
         </header>
@@ -3525,10 +3533,10 @@ function App() {
                   <button
                     key={item.day}
                     type="button"
-                    className={`day-chip ${item.day === selectedTrxDay ? 'active' : ''}`}
+                    className={`day-chip ${item.day === selectedTrxDay ? 'active' : ''} ${trxLogs[item.day]?.complete ? 'done' : ''}`}
                     onClick={() => setSelectedTrxDay(item.day)}
                   >
-                    <span>Day {item.day}</span>
+                    <span>Day {item.day}{trxLogs[item.day]?.complete ? ' ✓' : ''}</span>
                     <small>{item.title}</small>
                   </button>
                 ))}
@@ -3568,6 +3576,38 @@ function App() {
                   </ul>
                 </div>
               )}
+
+              <div className="action-buttons">
+                {!trxLogs[selectedTrxDay]?.complete && (
+                  <button
+                    type="button"
+                    className="hero-button"
+                    onClick={() => {
+                      const newLogs = { ...trxLogs, [selectedTrxDay]: { complete: true, completedAt: new Date().toISOString() } }
+                      setTrxLogs(newLogs)
+                      localStorage.setItem('trx-logs-v1', JSON.stringify(newLogs))
+                      // Find next incomplete day
+                      let nextDay = selectedTrxDay + 1
+                      while (nextDay <= trxDuration && newLogs[nextDay]?.complete) {
+                        nextDay++
+                      }
+                      if (nextDay <= trxDuration) {
+                        setSelectedTrxDay(nextDay)
+                      }
+                    }}
+                  >
+                    Mark Day {selectedTrxDay} Complete
+                  </button>
+                )}
+                {trxLogs[selectedTrxDay]?.complete && (
+                  <div className="completion-status">
+                    <span className="complete-indicator">✓ Day {selectedTrxDay} completed</span>
+                    {trxLogs[selectedTrxDay].completedAt && (
+                      <small>{new Date(trxLogs[selectedTrxDay].completedAt).toLocaleDateString()}</small>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="card">
@@ -3579,6 +3619,24 @@ function App() {
                 <li><strong>Progression:</strong> Foundation → Build → Strength → Peak phases</li>
                 <li><strong>Rest:</strong> Built-in recovery days and active recovery sessions</li>
               </ul>
+            </div>
+
+            <div className="card">
+              <h3>Progress Summary</h3>
+              <div className="progress-stats">
+                <div>
+                  <strong>{Object.keys(trxLogs).filter(day => trxLogs[day]?.complete).length}</strong>
+                  <span>days completed</span>
+                </div>
+                <div>
+                  <strong>{trxDuration - Object.keys(trxLogs).filter(day => trxLogs[day]?.complete).length}</strong>
+                  <span>days remaining</span>
+                </div>
+                <div>
+                  <strong>{Math.round((Object.keys(trxLogs).filter(day => trxLogs[day]?.complete).length / trxDuration) * 100)}%</strong>
+                  <span>complete</span>
+                </div>
+              </div>
             </div>
           </div>
         )}
