@@ -2293,7 +2293,20 @@ function App() {
   const heroProgramTitle = activeProfile === NSW_PROFILE ? 'NSW Training Program' : activeProfile === TRX_PROFILE ? 'TRX Training Program' : 'PFT Training Program'
   const allPdfExercises = useMemo(() => Object.keys(exerciseDescriptions), [])
   const todaysExercises = useMemo(() => getExercisesForPlan(selectedPlan), [selectedPlan])
-  const selectedExerciseDescription = selectedExercise ? exerciseDescriptions[selectedExercise] : ''
+  const allTrxExercises = useMemo(() => {
+    const all = Object.values(trxExercises).flat()
+    return all.sort((a, b) => a.name.localeCompare(b.name))
+  }, [])
+  const selectedExerciseDescription = useMemo(() => {
+    if (!selectedExercise) return ''
+    // Check PDF exercises first
+    if (exerciseDescriptions[selectedExercise]) {
+      return exerciseDescriptions[selectedExercise]
+    }
+    // Check TRX exercises
+    const trxExercise = allTrxExercises.find((ex) => ex.name === selectedExercise)
+    return trxExercise ? trxExercise.description : ''
+  }, [selectedExercise, allTrxExercises])
   const timerExercises = useMemo(() => {
     const fromPlan = getExercisesForPlan(selectedPlan)
     const fromSteps = sessionSteps
@@ -2304,11 +2317,7 @@ function App() {
           .map((entry) => entry.key)
       })
 
-    // Add TRX exercises when TRX tab is active or TRX profile is active
-    const trxExercises = (activeTab === 'trx' || trxProgramActive) ? 
-      Object.values(trxExercises).flat().map(ex => ex.name) : []
-
-    return Array.from(new Set([...fromPlan, ...fromSteps, ...trxExercises]))
+    return Array.from(new Set([...fromPlan, ...fromSteps]))
   }, [selectedPlan, sessionSteps])
   const baselineCoverageByWorkout = {
     row2k: baseline.hasRow2kBaseline,
@@ -3669,13 +3678,40 @@ function App() {
                   <ul>
                     {selectedTrxPlan.exercises.map((exercise, index) => (
                       <li key={index} className="target-item">
-                        <strong>{exercise.name}</strong>
+                        <button
+                          type="button"
+                          className="exercise-link"
+                          onClick={() => {
+                            setSelectedExercise(exercise.name)
+                            setShowExerciseModal(true)
+                          }}
+                        >
+                          <strong>{exercise.name}</strong>
+                        </button>
                         <span className="target-source">{exercise.difficulty} · {exercise.duration}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
+
+              <div className="exercise-guide-row" style={{ marginTop: '1rem' }}>
+                <label className="exercise-select-label">
+                  Exercise Guide (TRX)
+                  <select
+                    value={selectedExercise}
+                    onChange={(event) => setSelectedExercise(event.target.value)}
+                  >
+                    <option value="">Select an exercise...</option>
+                    {allTrxExercises.map((exercise) => (
+                      <option key={exercise.id} value={exercise.name}>{exercise.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <button type="button" className="ghost-button" onClick={() => setShowExerciseModal(true)} disabled={!selectedExercise}>
+                  Show Description
+                </button>
+              </div>
 
               <div className="action-buttons">
                 {!trxLogs[selectedTrxDay]?.complete && (
