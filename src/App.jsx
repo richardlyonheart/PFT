@@ -2239,6 +2239,11 @@ function App() {
     stepIndex: 0,
     remaining: 0
   })
+  const [stretchState, setStretchState] = useState({
+    status: 'idle',
+    currentIndex: 0,
+    remaining: 60
+  })
   const [stopwatchState, setStopwatchState] = useState({
     status: 'idle',
     elapsedMs: 0,
@@ -2297,6 +2302,7 @@ function App() {
     workoutEnabled(programConfig.selectedWorkouts, 'run15') &&
     workoutEnabled(programConfig.selectedWorkouts, 'swim500y')
   const currentStep = sessionSteps[sessionState.stepIndex]
+  const currentStretch = dailyStretchExercises[stretchState.currentIndex] || dailyStretchExercises[0]
   const workOrTestSteps = sessionSteps.filter((s) => s.type === 'work' || s.type === 'test')
   const isSwimDay = workOrTestSteps.length > 0 && workOrTestSteps.every((s) => s.isSwim)
   const isTestDay = selectedPlan.day === 0 || selectedPlan.day === programConfig.programDays
@@ -2704,6 +2710,51 @@ function App() {
     }
   }, [swimChecks, sessionSteps, selectedDay, isChecklistDay])
 
+  useEffect(() => {
+    if (stretchState.status !== 'running') {
+      return undefined
+    }
+
+    const intervalId = window.setInterval(() => {
+      setStretchState((current) => {
+        if (current.remaining > 1) {
+          return { ...current, remaining: current.remaining - 1 }
+        }
+
+        if (current.currentIndex >= dailyStretchExercises.length - 1) {
+          return { status: 'complete', currentIndex: current.currentIndex, remaining: 0 }
+        }
+
+        return {
+          ...current,
+          status: 'running',
+          currentIndex: current.currentIndex + 1,
+          remaining: 60
+        }
+      })
+    }, 1000)
+
+    return () => window.clearInterval(intervalId)
+  }, [stretchState.status])
+
+  const startPauseStretchTimer = () => {
+    setStretchState((current) => {
+      if (current.status === 'idle') {
+        return { ...current, status: 'running' }
+      }
+
+      if (current.status === 'running') {
+        return { ...current, status: 'paused' }
+      }
+
+      return { ...current, status: 'running' }
+    })
+  }
+
+  const resetStretchTimer = () => {
+    setStretchState({ status: 'idle', currentIndex: 0, remaining: 60 })
+  }
+
   const shouldHideHeroOnMobile = ['timer', 'nsw', 'nswCalendar', 'trx'].includes(activeTab) && isMobile
 
   return (
@@ -3109,9 +3160,38 @@ function App() {
             <div className="card">
               <h3>Daily Stretches</h3>
               <p className="subline">1 minute each. Run the sequence continuously for a quick mobility block.</p>
+
+              <div className="stretch-timer-panel">
+                <div className="stretch-timer-display">
+                  <div className="stretch-emoji large" aria-hidden="true">{currentStretch.icon}</div>
+                  <div>
+                    <p className="timer-status">Now showing</p>
+                    <h4>{currentStretch.name}</h4>
+                    <p className="stretch-timer-countdown">{formatSeconds(stretchState.remaining)}</p>
+                    <p className="stretch-direction">{currentStretch.direction}</p>
+                  </div>
+                </div>
+
+                <div className="timer-actions">
+                  <button type="button" className="action-button" onClick={startPauseStretchTimer}>
+                    {stretchState.status === 'running' ? 'Pause' : stretchState.status === 'paused' ? 'Resume' : 'Start'}
+                  </button>
+                  <button type="button" className="ghost-button" onClick={resetStretchTimer}>
+                    Reset
+                  </button>
+                </div>
+
+                <p className="timer-progress">
+                  Exercise {Math.min(stretchState.currentIndex + 1, dailyStretchExercises.length)} of {dailyStretchExercises.length}
+                </p>
+                {stretchState.status === 'complete' && (
+                  <p className="timer-complete">Stretch routine complete.</p>
+                )}
+              </div>
+
               <div className="stretch-list">
                 {dailyStretchExercises.map((exercise, index) => (
-                  <div key={`${exercise.name}-${index}`} className="stretch-item">
+                  <div key={`${exercise.name}-${index}`} className={`stretch-item ${stretchState.currentIndex === index ? 'active' : ''}`}>
                     <div className="stretch-emoji" aria-hidden="true">{exercise.icon}</div>
                     <div className="stretch-copy">
                       <strong>{exercise.name}</strong>
