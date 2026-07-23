@@ -237,6 +237,48 @@ ul {
   white-space: nowrap;
 }
 
+.stretch-list {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.95rem;
+}
+
+.stretch-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.8rem;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.8rem;
+  background: linear-gradient(180deg, rgba(45, 141, 125, 0.08), rgba(255, 255, 255, 0.9));
+}
+
+.stretch-emoji {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 12px;
+  background: rgba(210, 97, 41, 0.12);
+  font-size: 1.35rem;
+}
+
+.stretch-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.stretch-copy strong {
+  font-size: 0.97rem;
+}
+
+.stretch-copy span {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
 .exercise-guide-row {
   margin-top: 0.8rem;
   display: flex;

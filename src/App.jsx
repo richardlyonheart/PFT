@@ -58,6 +58,18 @@ const defaultWorkoutSelection = {
 
 const weekDayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+const dailyStretchExercises = [
+  { name: 'Lympthatic hops', icon: '🦘', direction: 'Bounce lightly on both feet with a soft, tall posture.' },
+  { name: 'Body waves', icon: '🌊', direction: 'Ripple through the torso from top to bottom in a smooth wave.' },
+  { name: 'Trunk twists', icon: '🌀', direction: 'Rotate the ribs and hips side to side while keeping the chest tall.' },
+  { name: 'Arm swings', icon: '🪩', direction: 'Swing both arms forward and back in a relaxed, controlled arc.' },
+  { name: 'McGregors', icon: '🏃', direction: 'Bring one knee up and alternate with a quick, upright marching rhythm.' },
+  { name: 'Golf swings', icon: '⛳', direction: 'Make slow, smooth shoulder turns from side to side like a golf swing.' },
+  { name: 'Ballet squats', icon: '🩰', direction: 'Sit low with a lifted chest and rise slowly through the heels.' },
+  { name: 'Marches', icon: '👟', direction: 'March in place with a tall spine and strong knee lift.' },
+  { name: 'Horseback squats', icon: '🐎', direction: 'Drop into a wide squat and bounce softly as if riding a horse.' }
+]
+
 const NSW_TOTAL_WEEKS = 26
 const NSW_INTERVAL_CHART = [
   { min: 480, max: 510, runRepeat: '1:16-1:21', runRecovery: '2:32-3:23', swimRepeat: '1:34-1:40', swimRecovery: '3:08-4:10' },
@@ -3092,6 +3104,27 @@ function App() {
           </div>
         )}
 
+        {activeTab === 'stretches' && (
+          <div className="day-details">
+            <div className="card">
+              <h3>Daily Stretches</h3>
+              <p className="subline">1 minute each. Run the sequence continuously for a quick mobility block.</p>
+              <div className="stretch-list">
+                {dailyStretchExercises.map((exercise, index) => (
+                  <div key={`${exercise.name}-${index}`} className="stretch-item">
+                    <div className="stretch-emoji" aria-hidden="true">{exercise.icon}</div>
+                    <div className="stretch-copy">
+                      <strong>{exercise.name}</strong>
+                      <span>{exercise.direction}</span>
+                    </div>
+                    <span className="target-source">1 min</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'goals' && (
           <div className="day-details">
             {nswProgramActive ? (
@@ -3824,6 +3857,14 @@ function App() {
         >
           <span className="nav-icon">📋</span>
           <span>Day {selectedDay}</span>
+        </button>
+        <button
+          type="button"
+          className={`nav-tab ${activeTab === 'stretches' ? 'active' : ''}`}
+          onClick={() => setActiveTab('stretches')}
+        >
+          <span className="nav-icon">🧘</span>
+          <span>Daily Stretches</span>
         </button>
         <button
           type="button"
