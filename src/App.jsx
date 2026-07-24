@@ -60,14 +60,14 @@ const weekDayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'S
 
 const dailyStretchExercises = [
   { name: 'Lympthatic hops', icon: '🦘', direction: 'Bounce lightly on both feet with a soft, tall posture.' },
-  { name: 'Body waves', icon: '🌊', direction: 'Ripple through the torso from top to bottom in a smooth wave.' },
-  { name: 'Trunk twists', icon: '🌀', direction: 'Rotate the ribs and hips side to side while keeping the chest tall.' },
+  { name: 'Body waves', icon: '🌊', direction: 'Bring arms in a smooth, flowing motion from the shoulders to the hips.' },
+  { name: 'Trunk twists', icon: '🌀', direction: 'Rotate the ribs and hips side to side while keeping the chest tall. Allow arms to swing naturally.' },
   { name: 'Arm swings', icon: '🪩', direction: 'Swing both arms forward and back in a relaxed, controlled arc.' },
-  { name: 'McGregors', icon: '🏃', direction: 'Bring one knee up and alternate with a quick, upright marching rhythm.' },
-  { name: 'Golf swings', icon: '⛳', direction: 'Make slow, smooth shoulder turns from side to side like a golf swing.' },
-  { name: 'Ballet squats', icon: '🩰', direction: 'Sit low with a lifted chest and rise slowly through the heels.' },
+  { name: 'Dead Arms', icon: '🏃', direction: 'Let the arms hang down by the sides and swing them forward and back in a controlled motion.' },
+  { name: 'Golf swings', icon: '⛳', direction: 'Swing the arms in a golf swing motion, keeping the torso tall and stable.' },
+  { name: 'Ballet squats', icon: '🩰', direction: 'Squat and then bring arms above the head.' },
   { name: 'Marches', icon: '👟', direction: 'March in place with a tall spine and strong knee lift.' },
-  { name: 'Horseback squats', icon: '🐎', direction: 'Drop into a wide squat and bounce softly as if riding a horse.' }
+  { name: 'Horseback position', icon: '🐎', direction: 'Drop into a wide squat and bring hands to heart center.' }
 ]
 
 const NSW_TOTAL_WEEKS = 26
