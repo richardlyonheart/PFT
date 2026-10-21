@@ -104,6 +104,36 @@ service cloud.firestore {
 }
 ```
 
+## Host on a Home Server
+
+The production build is a static site. Docker Compose packages it with Nginx and
+serves it on port 8080 by default. Install Docker Engine and the Docker Compose
+plugin on your server, copy this project to it, then run from the project folder:
+
+```bash
+docker compose up -d --build
+```
+
+Open `http://SERVER_IP:8080` on your home network. To use a different port, set
+`PFT_PORT` in the server's `.env` file before starting the container.
+
+Firebase is optional; without it, workout data is stored only in each browser.
+To enable cloud sync, copy `.env.example` to `.env`, add your Firebase web
+configuration values, then rebuild and restart:
+
+```bash
+docker compose up -d --build
+```
+
+Add the home server's hostname or domain to Firebase Authentication's authorized
+domains. For access from outside your home, use a reverse proxy with HTTPS and
+configure your domain and router accordingly; avoid exposing the unencrypted
+HTTP port directly to the public internet.
+
+Alternatively, run `npm run build` and copy the generated `dist/` directory to
+any static web server. Configure it to serve `index.html` for unknown paths so
+the app's client-side routes continue to work.
+
 ## Deploy to Vercel
 
 1. Push this repo to GitHub.
